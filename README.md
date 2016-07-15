@@ -5,12 +5,18 @@ A PHP-based database versioning tool.
 
 ### Composer (recommended)
 ```sh
-composer require monomelodies/dbmover
+# eg. `dbmover/mysql`
+composer require dbmover/VENDOR
 ```
 
 ### Manual
-1. Download or clone the repository;
-2. There is an executable `dbmover` in the root.
+1. Download or clone the [main repository](https://github.com/dbmover/dbmover);
+2. Download or clone the vendor repository (e.g.
+   [https://github.com/dbmover/mysql](https://github.com/dbmover/mysql);
+3. There is an executable `dbmover` in the `bin` directory of the main
+   repository;
+4. Register the correct namespaces (`Dbmover\Dbmover` and `Dbmover\VENDOR`) to
+   the respective `src` directories in your PSR-4 autoloader.
 
 ## Vendor support
 dbMover currently supports the MySQL and PostgreSQL database engines. Support
@@ -44,7 +50,7 @@ The format is as follows:
 
 ```json
 {
-    "dsn": {
+    "your dsn": {
         "user": "yourUserName",
         "password": "something secret",
         "schema": ["path/to/schema/file.sql"],
@@ -53,10 +59,10 @@ The format is as follows:
 }
 ```
 
-The contents of `"dsn"` are a bit driver-specific, but will usually be along
-the lines of `"engine:host=host,dbname=name,port=1234"`, with one or more being
-optional (defaulting to the engine defaults). This is the exact same string that
-PHP's `PDO` constructor expects.
+The contents of `"your dsn"` are a bit driver-specific, but will usually be
+along the lines of `"engine:host=host,dbname=name,port=1234"`, with one or more
+being optional (defaulting to the engine defaults). This is the exact same
+string that PHP's `PDO` constructor expects.
 
 The file names of the schemas must be either relative to the directory you're
 running from (recommended, since typically you want to keep those in version
@@ -81,6 +87,9 @@ After defining the config file, run the executable from that same location:
 ```sh
 vendor/bin/dbmover
 ```
+
+> For manual installs (see above), this file will be in a different place. You
+> could consider creating a symlink to replicate the exact behaviour.
 
 That's it - your database should now be up to date with your schema(s).
 
@@ -338,7 +347,7 @@ CREATE TABLE mytable (
 
 One can also use a shorthand `SERIAL` or `BIGSERIAL` type that automates this
 process, but that doesn't play well with DbMover's analysis and table
-modification statements.
+modification statements so it's recommended to use the more verbose syntax.
 
 ## Contributing
 SQLite support is sort-of planned for the near future, but is not extremely high
