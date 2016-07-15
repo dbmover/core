@@ -1,5 +1,5 @@
 {
-    "name": "monomelodies/dbmover",
+    "name": "dbmover/dbmover",
     "description": "PHP-based database versioning tool",
     "type": "library",
     "license": "MIT",
