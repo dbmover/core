@@ -14,7 +14,7 @@
         "monomelodies/kingconf": "^1.1"
     },
     "require-dev": {
-        "monomelodies/gentry": "^0.8"
+        "gentry/gentry": "^0.10.2"
     },
     "bin": [
         "bin/dbmover"
