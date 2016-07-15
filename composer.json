@@ -1,5 +1,5 @@
 {
-    "name": "monomelodies/dbmover",
+    "name": "dbmover/dbmover",
     "description": "PHP-based database versioning tool",
     "type": "library",
     "license": "MIT",
@@ -17,16 +17,16 @@
         "monomelodies/gentry": "^0.8"
     },
     "bin": [
-        "dbmover"
+        "bin/dbmover"
     ],
     "autoload": {
         "psr-4": {
-            "Dbmover\\": "src"
+            "Dbmover\\Dbmover\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Dbmover\\Test\\": "tests"
+            "Dbmover\\Dbmover\\Test\\": "tests"
         }
     }
 }
