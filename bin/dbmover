@@ -26,6 +26,7 @@ foreach ([
     }
     unset($file);
 }
+fwrite(STDOUT, "DbMover 0.4.1 by Marijn Ophorst\n\n");
 
 if (!isset($file)) {
     fwrite(STDERR, <<<EOT

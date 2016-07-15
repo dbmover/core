@@ -1,6 +1,6 @@
 site_name: dbMover
-site_url: http://dbmover.monomelodies.nl/docs/
-repo_url: https://github.com/monomelodies/dbmover
+site_url: http://dbmover.monomelodies.nl/dbmover/docs/
+repo_url: https://github.com/dbmover/dbmover
 
 pages:
 - Home:
