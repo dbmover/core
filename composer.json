@@ -11,7 +11,7 @@
     ],
     "require": {
         "dariuszp/cli-progress-bar": "^1.0",
-        "monomelodies/kingconf": "^1.0"
+        "monomelodies/kingconf": "^1.1"
     },
     "require-dev": {
         "monomelodies/gentry": "^0.8"
