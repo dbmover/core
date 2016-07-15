@@ -17,7 +17,7 @@
         "monomelodies/gentry": "^0.8"
     },
     "bin": [
-        "dbmover"
+        "bin/dbmover"
     ],
     "autoload": {
         "psr-4": {
