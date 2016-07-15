@@ -1,21 +1,18 @@
 <?php
 
-namespace Dbmover;
+namespace Dbmover\Dbmover;
 
 use PDO;
 use PDOException;
 use Dariuszp\CliProgressBar;
 
 /**
- * The main Dbmover class. This represents a migration for a single unique DSN
+ * The main Schema class. This represents a migration for a single unique DSN
  * from the `dbmover.json` config file.
  */
-abstract class Dbmover
+abstract class Schema
 {
     const CATALOG_COLUMN = 'CATALOG';
-    const REGEX_PROCEDURES = '@^CREATE (PROCEDURE|FUNCTION).*?^END;$@ms';
-    const REGEX_TRIGGERS = '@^CREATE TRIGGER.*?^END;$@ms';
-    const DROP_ROUTINE_SUFFIX = '()';
     const DROP_CONSTRAINT = 'CONSTRAINT';
 
     public $pdo;
@@ -446,7 +443,7 @@ abstract class Dbmover
         preg_match("@CREATE.*?TABLE \w+ \((.*)\)@ms", $schema, $extr);
         $lines = preg_split('@,$@m', rtrim($extr[1]));
         $cols = [];
-        foreach ($lines as &$line) {
+        foreach ($lines as $line) {
             $line = trim($line);
             $column = [
                 'colname' => '',
@@ -459,19 +456,21 @@ abstract class Dbmover
             preg_match('@^\w+@', $line, $name);
             $column['colname'] = $name[0];
             $line = preg_replace("@^{$name[0]}@", '', $line);
-            if (!$this->isNullable($line)) {
+            $sql = new \StdClass;
+            $sql->sql = $line;
+            if (!$this->isNullable($sql)) {
                 $column['nullable'] = 'NO';
             }
-            if ($this->isPrimaryKey($line)) {
+            if ($this->isPrimaryKey($sql)) {
                 $column['key'] = 'PRI';
             }
-            if ($this->isSerial($line)) {
+            if ($this->isSerial($sql)) {
                 $column['is_serial'] = true;
             }
-            if (null !== ($default = $this->getDefaultValue($line))) {
+            if (null !== ($default = $this->getDefaultValue($sql))) {
                 $column['def'] = $default;
             }
-            $line = preg_replace('@REFERENCES.*?$@', '', $line);
+            $line = preg_replace('@REFERENCES.*?$@', '', $sql->sql);
             $column['coltype'] = strtolower(trim($line));
             $cols[$name[0]] = $column;
         }
@@ -485,10 +484,10 @@ abstract class Dbmover
      * @return string|null The default value of the column, if specified. If no
      *  default was specified, null.
      */
-    public function getDefaultValue(&$column)
+    public function getDefaultValue($column)
     {
-        if (preg_match('@DEFAULT (.*?)($| )@', $column, $default)) {
-            $column = str_replace($default[0], '', $column);
+        if (preg_match('@DEFAULT (.*?)($| )@', $column->sql, $default)) {
+            $column->sql = str_replace($default[0], '', $column->sql);
             return $default[1];
         }
         return null;
@@ -500,10 +499,10 @@ abstract class Dbmover
      * @param string $column The referenced column definition.
      * @return bool
      */
-    public function isNullable(&$column)
+    public function isNullable($column)
     {
-        if (strpos($column, 'NOT NULL')) {
-            $column = str_replace('NOT NULL', '', $column);
+        if (strpos($column->sql, 'NOT NULL')) {
+            $column->sql = str_replace('NOT NULL', '', $column->sql);
             return false;
         }
         return true;
@@ -518,7 +517,7 @@ abstract class Dbmover
      * @param string $column The referenced column definition.
      * @return bool
      */
-    public abstract function isSerial(&$column);
+    public abstract function isSerial($column);
     
     /**
      * Checks whether a column is a primary key.
@@ -526,7 +525,7 @@ abstract class Dbmover
      * @param string $column The referenced column definition.
      * @return bool
      */
-    public abstract function isPrimaryKey(&$column);
+    public abstract function isPrimaryKey($column);
 
     /**
      * Return a list of all routines in the current catalog.

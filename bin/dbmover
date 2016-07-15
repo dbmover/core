@@ -3,7 +3,7 @@
 
 namespace Dbmover;
 
-use Kingconf\Config;
+use Monomelodies\Kingconf\Config;
 use PDOException;
 
 /**
@@ -54,7 +54,7 @@ EOT
 foreach ($config as $dsn => $settings) {
     preg_match('@^(\w+):@', $dsn, $vendor);
     $vendor = ucfirst(strtolower($vendor[1]));
-    $class = "Dbmover\\$vendor";
+    $class = "Dbmover\\$vendor\\Schema";
     if (!class_exists($class)) {
         fwrite(STDOUT, <<<EOT
 \033[1;035mNotice:\033[0;37m Vendor `$vendor` is unsupported, skipping.\033[0m
