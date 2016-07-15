@@ -26,6 +26,10 @@ $ composer require dbmover/mysql
 $ composer require dbmover/pgsql
 ```
 
+For vendor-specific documentation, please refer to:
+[PostgreSQL](http://dbmover.monomelodies.nl/pgsql/) and
+[MySQL](http://dbmover.monomelodies.nl/mysql/).
+
 ## Design goals
 Web applications often work with SQL databases. Programmers will layout such a
 database in a "schema file", which is essentially just SQL statements. The
