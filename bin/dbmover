@@ -3,7 +3,7 @@
 
 namespace Dbmover;
 
-use Kingconf\Config;
+use Monomelodies\Kingconf\Config;
 use PDOException;
 
 /**
