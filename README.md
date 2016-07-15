@@ -5,18 +5,26 @@ A PHP-based database versioning tool.
 
 ### Composer (recommended)
 ```sh
-composer require monomelodies/dbmover
+# e.g. `dbmover/mysql`:
+$ composer require dbmover/VENDOR
 ```
 
 ### Manual
-1. Download or clone the repository;
-2. There is an executable `dbmover` in the root.
+1. Download or clone the relevant repositories;
+2. There is an executable `dbmover` in the `bin` dir of the main `dbmover`
+   repository.
 
 ## Vendor support
 dbMover currently supports the MySQL and PostgreSQL database engines. Support
 for SQLite is sort-of planned for the near future. If you have access to MSSQL
 or Oracle (or yet another database) and would like to contribute, you're more
 than welcome! See the end of this readme.
+
+```sh
+$ composer require dbmover/mysql
+# and/or
+$ composer require dbmover/pgsql
+```
 
 ## Design goals
 Web applications often work with SQL databases. Programmers will layout such a
@@ -79,7 +87,7 @@ views, procedures etc.).
 After defining the config file, run the executable from that same location:
 
 ```sh
-vendor/bin/dbmover
+$ vendor/bin/dbmover
 ```
 
 That's it - your database should now be up to date with your schema(s).
@@ -107,57 +115,14 @@ alterations, see below.
 ## Dropping columns
 Just remove them from the schema and re-run.
 
-## Dropping tables
+## Dropping tables, views etc.
 Just remove them from the schema and re-run.
 
 ## Foreign key constraints and indexes
 Depending on your database vendor, it may be allowed to specify these during
 table creation. That would mean dbMover never sees them if the table already
 exists! _So don't do that._ Instead, create these constraints after table
-creation using `ALTER TABLE` statements. The exception is a primary key on an
-`AUTOINCREMENT`/`SERIAL` field since table creation would fail when the
-constraint is missing. However, these columns rarely if ever change, and even if
-they do you can manually apply the change using an `IF` block with the correct
-check on pre/post state.
-
-An example in MySQL:
-
-```sql
--- This is *wrong*:
-CREATE TABLE foo (
-    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    bar INTEGER,
-    INDEX (bar),
-    CONSTRAINT FOREIGN KEY (bar) REFERENCES buzz(id)
-) ENGINE='InnoDB';
-
--- Write it like this instead:
-CREATE TABLE foo (
-    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    bar INTEGER,
-) ENGINE='InnoDB';
-ALTER TABLE foo ADD INDEX (bar),
-    ADD CONSTRAINT FOREIGN KEY (bar) REFERENCES buzz(id);
-```
-
-In PostgreSQL:
-
-```sql
--- This is *wrong*:
-CREATE TABLE foo (
-    id SERIAL PRIMARY KEY,
-    bar INTEGER REFERENCES buzz(id)
-);
-CREATE INDEX foo_bar_idx ON foo(bar);
-
--- Write it like this instead:
-CREATE TABLE foo (
-    id SERIAL PRIMARY KEY,
-    bar INTEGER,
-);
-CREATE INDEX foo_bar_idx ON foo(bar);
-ALTER TABLE foo ADD CONSTRAINT FOREIGN KEY (bar) REFERENCES buzz(id);
-```
+creation using `ALTER TABLE` statements.
 
 The reason is that during the migration, dbMover will `DROP` all existing
 constraints and recreate them during the migration to ensure only the
@@ -311,35 +276,6 @@ the migration!
 Besides, the simple fact that the script runs correctly doesn't necessarily mean
 it did what you intended. Always verify your data after a migration.
 
-### Note on PostgreSQL
-PostgreSQL's `INFORMATION_SCHEMA` aliases contain more data than you would
-define in a schema file, especially for routines (its native functions are also
-exposed there). Since these native functions are normally owned by the
-`postgresql` user, dbMover will try to drop them and just silently fail. So
-_always_ run dbMover as an actual database user, not as a master user (this
-goes for MySQL as well, although the above problem isn't applicable there).
-
-"Master" or "root" users have privileges normal users don't, so theoretically
-you could include something like ```DROP unrelated_database;``` in the schema
-file. You'd only have yourself to blame of course, but best to avoid the risk.
-
-### Sequences in PostgreSQL
-PostgreSQL stores "auto_increment" unique ID's in so called "sequences" (to all
-intents and purposes, a "special" separate table). To allow migrations to run
-correctly, you should write these in the following manner:
-
-```sql
-CREATE SEQUENCE IF NOT EXISTS mytable_id_seq;
-CREATE TABLE mytable (
-    id BIGINT NOT NULL PRIMARY KEY DEFAULT NEXTVAL('auth_id_seq'::regclass),
-    -- ...other table info...
-);
-```
-
-One can also use a shorthand `SERIAL` or `BIGSERIAL` type that automates this
-process, but that doesn't play well with DbMover's analysis and table
-modification statements.
-
 ## Contributing
 SQLite support is sort-of planned for the near future, but is not extremely high
 on my priority list (clients use it occasionally, but it's really not a database
@@ -352,8 +288,4 @@ the repository and send us a pull request!
 There's no formal style guide, but look at the existing code and please try to
 keep your coding style consitent with it. If you work on vendors I can't/won't
 support, please also make sure you add unit tests for those.
-
-A todo for 0.4 is also to issue warnings if certain statements produced errors
-both before _and_ after table migration, since that means they probably didn't
-do what you intended.
 
