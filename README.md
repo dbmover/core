@@ -62,7 +62,7 @@ The format is as follows:
 {
     "your dsn": {
         "user": "yourUserName",
-        "password": "something secret",
+        "pass": "something secret",
         "schema": ["path/to/schema/file.sql"],
         "ignore": ["/regex/"]
     }
