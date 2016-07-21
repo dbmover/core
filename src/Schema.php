@@ -15,6 +15,11 @@ abstract class Schema
     const CATALOG_COLUMN = 'CATALOG';
     const DROP_CONSTRAINT = 'CONSTRAINT';
 
+    use TableHelper;
+    use ColumnHelper;
+    use IndexHelper;
+    use ProcedureWrapper;
+
     public $pdo;
     public $schemas = [];
     public $database;
@@ -274,13 +279,6 @@ abstract class Schema
     }
 
     /**
-     * Generate drop statements for all indexes in the database.
-     *
-     * @return array Array of SQL operations.
-     */
-    public abstract function dropIndexes();
-
-    /**
      * Generate drop statements for all triggers in the database.
      *
      * @return array Array of SQL operations.
@@ -292,79 +290,6 @@ abstract class Schema
             $operations[] = "DROP TRIGGER $trigger";
         }
         return $operations;
-    }
-
-    /**
-     * Default implementation for adding a column.
-     *
-     * @param string $table The table to modify.
-     * @param array $definition Key/value hash of column definition.
-     * @return string SQL that adds this column to the table.
-     */
-    public function addColumn($table, array $definition)
-    {
-        return sprintf(
-            "ALTER TABLE %s ADD COLUMN %s %s%s%s",
-            $table,
-            $definition['colname'],
-            $definition['coltype'],
-            $definition['nullable'] == 'NO' ?
-                ' NOT NULL' :
-                '',
-            $definition['def'] != '' ?
-                sprintf(
-                    " DEFAULT %s",
-                    is_null($definition['def']) ?
-                        'NULL' :
-                        $definition['def']
-                ) :
-                ''
-        );
-    }
-
-    /**
-     * Default implementation for altering a column.
-     *
-     * @param string $table The table to modify.
-     * @param array $definition Key/value hash of column definition.
-     * @return array An array of SQL statements that bring this column into the
-     *  desired state.
-     */
-    public function alterColumn($table, array $definition)
-    {
-        $operations = [];
-        $base = sprintf(
-            "ALTER TABLE %s ALTER COLUMN %s",
-            $table,
-            $definition['colname']
-        );
-        $operations[] = "$base TYPE {$definition['coltype']}";
-        if ($definition['nullable'] == 'NO') {
-            $operations[] = "$base SET NOT NULL";
-        } else {
-            $operations[] = "$base DROP NOT NULL";
-        }
-        if ($definition['def'] != '') {
-            $operations[] = "$base SET DEFAULT "
-                .(is_null($definition['def']) ?
-                    'NULL' :
-                    $definition['def']);
-        } elseif (!$definition['is_serial']) {
-            $operations[] = "$base DROP DEFAULT";
-        }
-        return $operations;
-    }
-
-    /**
-     * Database vendors not allowing direct conditionals (e.g. MySQL) can wrap
-     * them in an "anonymous" procedure ECMAScript-style here.
-     *
-     * @param string $sql The SQL to wrap.
-     * @return string The input SQL potentially wrapped and called.
-     */
-    public function wrapInProcedure($sql)
-    {
-        return $sql;
     }
 
     /**
@@ -388,144 +313,6 @@ abstract class Schema
         }
         return $hoisted;
     }
-
-    /**
-     * Get an array of all table names in this database.
-     *
-     * @return array An array of table names.
-     */
-    public function getTables($type = 'BASE TABLE')
-    {
-        $stmt = $this->pdo->prepare(sprintf(
-            "SELECT TABLE_NAME
-                FROM INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_%s = ? AND TABLE_TYPE = ?",
-            static::CATALOG_COLUMN
-        ));
-        $stmt->execute([$this->database, $type]);
-        $names = [];
-        while (false !== ($table = $stmt->fetchColumn())) {
-            $names[] = $table;
-        }
-        return $names;
-    }
-
-    /**
-     * Check if a table exists on the given database.
-     *
-     * @param string $name The table name to check.
-     * @return bool True or false.
-     */
-    public function tableExists($name, $type = 'BASE TABLE')
-    {
-        $tables = $this->getTables($type);
-        return in_array($name, $tables);
-    }
-
-    /**
-     * Get the relevant parts of a table schema from INFORMATION_SCHEMA in a
-     * vendor-independent way.
-     *
-     * @param string $name The name of the table.
-     * @return array A hash of columns, where the key is also the column name.
-     */
-    public abstract function getTableDefinition($name);
-
-    /**
-     * Parse the table definition as specified in the schema into a format
-     * similar to what `getTableDefinition` returns.
-     *
-     * @param string $schema The schema for this table (CREATE TABLE .. (...);)
-     * @return array A hash of columns, where the key is also the column name.
-     */
-    public function parseTableDefinition($schema)
-    {
-        preg_match("@CREATE.*?TABLE \w+ \((.*)\)@ms", $schema, $extr);
-        $lines = preg_split('@,$@m', rtrim($extr[1]));
-        $cols = [];
-        foreach ($lines as $line) {
-            $line = trim($line);
-            $column = [
-                'colname' => '',
-                'def' => null,
-                'nullable' => 'YES',
-                'coltype' => '',
-                'is_serial' => false,
-            ];
-            // Extract the name
-            preg_match('@^\w+@', $line, $name);
-            $column['colname'] = $name[0];
-            $line = preg_replace("@^{$name[0]}@", '', $line);
-            $sql = new \StdClass;
-            $sql->sql = $line;
-            if (!$this->isNullable($sql)) {
-                $column['nullable'] = 'NO';
-            }
-            if ($this->isPrimaryKey($sql)) {
-                $column['key'] = 'PRI';
-            }
-            if ($this->isSerial($sql)) {
-                $column['is_serial'] = true;
-            }
-            if (null !== ($default = $this->getDefaultValue($sql))) {
-                $column['def'] = $default;
-            }
-            $line = preg_replace('@REFERENCES.*?$@', '', $sql->sql);
-            $column['coltype'] = strtolower(trim($line));
-            $cols[$name[0]] = $column;
-        }
-        return $cols;
-    }
-
-    /**
-     * Extract and return the default value for a column, if specified.
-     *
-     * @param string $column The referenced column definition.
-     * @return string|null The default value of the column, if specified. If no
-     *  default was specified, null.
-     */
-    public function getDefaultValue($column)
-    {
-        if (preg_match('@DEFAULT (.*?)($| )@', $column->sql, $default)) {
-            $column->sql = str_replace($default[0], '', $column->sql);
-            return $default[1];
-        }
-        return null;
-    }
-
-    /**
-     * Checks whether a column is nullable.
-     *
-     * @param string $column The referenced column definition.
-     * @return bool
-     */
-    public function isNullable($column)
-    {
-        if (strpos($column->sql, 'NOT NULL')) {
-            $column->sql = str_replace('NOT NULL', '', $column->sql);
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Checks whether a column is a "serial" column.
-     *
-     * Vendors have different implementations of this, e.g. MySQL "tags" the
-     * column as "auto_increment" whilst PostgreSQL uses a `SERIAL` data type.
-     *
-     * @param string $column The referenced column definition.
-     * @return bool
-     */
-    public abstract function isSerial($column);
-    
-    /**
-     * Checks whether a column is a primary key.
-     *
-     * @param string $column The referenced column definition.
-     * @return bool
-     */
-    public abstract function isPrimaryKey($column);
 
     /**
      * Return a list of all routines in the current catalog.
@@ -584,9 +371,6 @@ abstract class Schema
         }
         return $triggers;
     }
-
-    /**
-     * Return an array of statements 
 
     /**
      * Determine whether an object should be ignored as per config.
