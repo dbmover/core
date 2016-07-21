@@ -80,32 +80,25 @@ abstract class Schema
         );
         $sql = implode("\n", $this->schemas);
         $operations = [];
-        $alter = $this->hoist( '@^ALTER TABLE .*?;$@ms', $sql);
+        list($sql, $alter) = $this->hoist( '@^ALTER TABLE .*?;$@ms', $sql);
 
         // Gather all conditionals and optionally wrap them in a "lambda".
-        $ifs = $this->hoist('@^IF.*?^END IF;$@ms', $sql);
+        list($sql, $ifs) = $this->hoist('@^IF.*?^END IF;$@ms', $sql);
         foreach ($ifs as &$if) {
             $if = $this->wrapInProcedure($if);
         }
 
         $operations = array_merge($operations, $ifs);
-        $tables = $this->hoist(
+        list($sql, $tables) = $this->hoist(
             '@^CREATE([A-Z]|\s)*(TABLE|SEQUENCE) .*?;$@ms',
             $sql
         );
 
         // Hoist all other recreatable objects.
-        $hoists = array_merge(
-            $this->hoist(
-                static::REGEX_PROCEDURES,
-                $sql
-            ),
-            $this->hoist(
-                static::REGEX_TRIGGERS,
-                $sql
-            )
-        );
-        $views = $this->hoist(
+        list($sql, $procedures) = $this->hoist(static::REGEX_PROCEDURES, $sql);
+        list($sql, $triggers) = $this->hoist(static::REGEX_TRIGGERS, $sql);
+        $hoists = array_merge($procedures, $triggers);
+        list($sql, $views) = $this->hoist(
             '@^CREATE VIEW.*?;$@ms',
             $sql
         );
@@ -140,10 +133,14 @@ abstract class Schema
                     if (!isset($existing[$col])) {
                         $operations[] = $this->addColumn($name, $definition);
                     } else {
-                        $operations = array_merge(
-                            $operations,
-                            $this->alterColumn($name, $definition)
-                        );
+                        $comp = $definition;
+                        unset($comp['key']);
+                        if ($comp != $existing[$col]) {
+                            $operations = array_merge(
+                                $operations,
+                                $this->alterColumn($name, $definition)
+                            );
+                        }
                     }
                     if (isset($definition['key'])
                         && $definition['key'] == 'PRI'
@@ -299,10 +296,10 @@ abstract class Schema
      * @param string $regex Regular expression to hoist.
      * @param string $sql Reference to the SQL string to hoist from. Hoisted
      *  statements are removed from this string.
-     * @return array An array of hoisted statements (or an empty array if
-     *  nothing matched).
+     * @return array An array containing the modified SQL (index 0) and an array
+     *  of hoisted statements at index 1 (or an empty array if nothing matched).
      */
-    public function hoist($regex, &$sql)
+    public function hoist($regex, $sql)
     {
         $hoisted = [];
         if (preg_match_all($regex, $sql, $matches, PREG_SET_ORDER)) {
@@ -311,7 +308,7 @@ abstract class Schema
                 $sql = str_replace($stmt[0], '', $sql);
             }
         }
-        return $hoisted;
+        return [$sql, $hoisted];
     }
 
     /**
@@ -385,6 +382,28 @@ abstract class Schema
             }
         }
         return false;
+    }
+
+    /**
+     * Vendor-specifically wrap an object name (e.g. in `...` for MySQL).
+     *
+     * @param string $name The name to wrap.
+     * @return string A wrapped name.
+     */
+    protected function wrapName($name)
+    {
+        return $name;
+    }
+    
+    /**
+     * Vendor-specifically unwrap an object name (e.g. remote `...` for MySQL).
+     *
+     * @param string $name The name to unwrap.
+     * @return string An unwrapped name.
+     */
+    protected function unwrapName($name)
+    {
+        return $name;
     }
 }
 
