@@ -85,9 +85,7 @@ trait TableHelper
             if (null !== ($default = $this->getDefaultValue($sql))) {
                 $column['def'] = $default;
             }
-            if (isset($column['def'])) {
-                $column['def'] = $this->pdo->quote($column['def']);
-            } else {
+            if (!isset($column['def'])) {
                 $column['def'] = 'NULL';
             }
             $line = preg_replace('@REFERENCES.*?$@', '', $sql->sql);
