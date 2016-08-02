@@ -85,6 +85,11 @@ trait TableHelper
             if (null !== ($default = $this->getDefaultValue($sql))) {
                 $column['def'] = $default;
             }
+            if (isset($column['def'])) {
+                $column['def'] = $this->pdo->quote($column['def']);
+            } else {
+                $column['def'] = 'NULL';
+            }
             $line = preg_replace('@REFERENCES.*?$@', '', $sql->sql);
             $column['coltype'] = strtolower(trim($line));
             $cols[$name[0]] = $column;
