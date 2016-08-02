@@ -21,8 +21,8 @@ composer require dbmover/VENDOR
 ## Vendor support
 dbMover currently supports the MySQL and PostgreSQL database engines. Support
 for SQLite is sort-of planned for the near future. If you have access to MSSQL
-or Oracle (or yet another database) and would like to contribute, you're more
-than welcome! See the end of this readme.
+or Oracle (or yet another PDO-compatible database) and would like to contribute,
+you're more than welcome! See the end of this readme.
 
 ```sh
 $ composer require dbmover/mysql
