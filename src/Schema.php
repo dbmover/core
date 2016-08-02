@@ -235,8 +235,8 @@ abstract class Schema
         $operations = array_merge(
             $this->dropConstraints(),
             $this->dropIndexes(),
-            $this->dropRoutines(),
-            $this->dropTriggers()
+            $this->dropTriggers(),
+            $this->dropRoutines()
         );
         foreach ($this->getTables('VIEW') as $view) {
             if (!$this->shouldIgnore($view)) {
