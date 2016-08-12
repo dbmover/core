@@ -240,7 +240,7 @@ abstract class Schema
         );
         foreach ($this->getTables('VIEW') as $view) {
             if (!$this->shouldIgnore($view)) {
-                $operations[] = "DROP VIEW $view";
+                $operations[] = "DROP VIEW IF EXISTS $view";
             }
         }
         return $operations;
