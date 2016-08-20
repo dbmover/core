@@ -199,7 +199,7 @@ abstract class Schema
                 $this->pdo->exec($operation);
             } catch (PDOException $e) {
                 if (preg_match("@^(ALTER|CREATE)@", $operation)) {
-                    $fails[] = $operation;
+                    $fails[$operation] = $e->getMessage();
                 }
             }
             $bar->progress();
@@ -217,8 +217,8 @@ abstract class Schema
         if ($fails) {
             echo "The following operations raised an exception:\n";
             echo "(This might not be a problem necessarily):\n";
-            foreach ($fails as $fail) {
-                echo "$fail\n";
+            foreach ($fails as $command => $reason) {
+                echo "$command: $reason\n";
             }
         }
     }
