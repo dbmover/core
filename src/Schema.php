@@ -198,7 +198,7 @@ abstract class Schema
             try {
                 $this->pdo->exec($operation);
             } catch (PDOException $e) {
-                if (preg_match("@^(ALTER|CREATE)@", $operation)) {
+                if (preg_match("@(ALTER|CREATE)@", $operation)) {
                     $fails[$operation] = $e->getMessage();
                 }
             }
