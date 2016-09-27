@@ -79,8 +79,9 @@ abstract class Schema
             STR_PAD_RIGHT
         );
         $sql = implode("\n", $this->schemas);
-        $operations = [];
-        list($sql, $alter) = $this->hoist( '@^ALTER TABLE .*?;$@ms', $sql);
+        list($sql, $drop) = $this->hoist('@^DROP .*?;$@ms', $sql);
+        $operations = $drop;
+        list($sql, $alter) = $this->hoist('@^ALTER TABLE .*?;$@ms', $sql);
 
         // Gather all conditionals and optionally wrap them in a "lambda".
         list($sql, $ifs) = $this->hoist('@^IF.*?^END IF;$@ms', $sql);
