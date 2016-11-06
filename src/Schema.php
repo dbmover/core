@@ -24,6 +24,7 @@ abstract class Schema
     public $schemas = [];
     public $database;
     public $ignores = [];
+    protected $user;
 
     /**
      * Constructor.
@@ -45,6 +46,7 @@ abstract class Schema
         if (isset($options['ignore']) && is_array($options['ignore'])) {
             $this->ignores = $options['ignore'];
         }
+        $this->user = $user;
     }
 
     /**
