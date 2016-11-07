@@ -239,13 +239,9 @@ abstract class Schema
             $this->dropConstraints(),
             $this->dropIndexes(),
             $this->dropTriggers(),
-            $this->dropRoutines()
+            $this->dropRoutines(),
+            $this->dropViews()
         );
-        foreach ($this->getTables('VIEW') as $view) {
-            if (!$this->shouldIgnore($view)) {
-                $operations[] = "DROP VIEW IF EXISTS $view";
-            }
-        }
         return $operations;
     }
 
