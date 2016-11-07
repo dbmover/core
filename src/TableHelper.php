@@ -94,5 +94,14 @@ trait TableHelper
         }
         return $cols;
     }
+
+    public function dropViews()
+    {
+        foreach ($this->getTables('VIEW') as $view) {
+            if (!$this->shouldIgnore($view)) {
+                $operations[] = "DROP VIEW IF EXISTS $view";
+            }
+        }
+    }
 }
 
