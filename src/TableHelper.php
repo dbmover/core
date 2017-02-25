@@ -75,6 +75,7 @@ trait TableHelper
             $sql->sql = $line;
             if (!$this->isNullable($sql)) {
                 $column['nullable'] = 'NO';
+                $column['def'] = '';
             }
             if ($this->isPrimaryKey($sql)) {
                 $column['key'] = 'PRI';
