@@ -21,7 +21,7 @@ trait ColumnHelper
             $definition['nullable'] == 'NO' ?
                 ' NOT NULL' :
                 '',
-            $definition['def'] != '' ?
+            $definition['def'] !== '' ?
                 sprintf(
                     " DEFAULT %s",
                     is_null($definition['def']) ?
