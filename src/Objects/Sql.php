@@ -31,11 +31,6 @@ class Sql implements ObjectInterface
     {
     }
 
-    public function drop() : string
-    {
-        return '';
-    }
-
     public function setComparisonObject(ObjectInterface $object)
     {
         $this->requested = $object;
