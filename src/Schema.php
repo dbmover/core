@@ -13,13 +13,9 @@ use Dbmover\Dbmover\Objects\Sql;
  */
 abstract class Schema
 {
-    const CATALOG_COLUMN = 'CATALOG';
     const DROP_CONSTRAINT = 'CONSTRAINT';
 
-    use TableHelper;
-    use ColumnHelper;
-    use IndexHelper;
-    use ProcedureWrapper;
+    use Helper\Procedure;
     use Helper\Ns;
 
     public $pdo;
@@ -133,7 +129,7 @@ abstract class Schema
         $tablenames = [];
         foreach ($tables as $table) {
             if (!(preg_match('@^CREATE.*?TABLE (\w+) ?\(@', $table, $name))) {
-                $operations = array_merge($operations, (new Sql($table))->toSql());
+                $operations[] = $table;
                 continue;
             }
             $name = $name[1];
@@ -141,47 +137,20 @@ abstract class Schema
 
             // If the table doesn't exist yet, create it verbatim.
             if (!isset($this->tables[$name])) {
-                $operations = array_merge($operations, (new Sql($table))->toSql());
+                $operations[] = $table;
             } else {
                 $class = $this->getObjectName('Table');
                 $this->tables[$name]->setComparisonObject($class::fromSql($table));
-                $operations = array_merge($operations, $this->tables[$name]->toSql());
-                /*
-                $existing = $this->getTableDefinition($name);
-                $new = $this->parseTableDefinition($table);
-                foreach ($existing as $col => $definition) {
-                    if (!isset($new[$col])) {
-                        $operations[] = sprintf(
-                            "ALTER TABLE %s DROP COLUMN %s",
-                            $name,
-                            $col
-                        );
-                    }
-                }
-                foreach ($new as $col => $definition) {
-                    if (!isset($existing[$col])) {
-                        $operations[] = $this->addColumn($name, $definition);
-                    } else {
-                        $comp = $definition;
-                        unset($comp['key']);
-                        if ($comp != $existing[$col]) {
-                            $operations = array_merge(
-                                $operations,
-                                $this->alterColumn($name, $definition)
-                            );
+                foreach ($indexes as $index) {
+                    if ($index->table == $name) {
+                        $index->parent = $this->tables[$name];
+                        $this->tables[$name]->requested->current->indexes[$index->name] = $index;
+                        if (isset($this->tables[$name]->current->indexes[$index->name])) {
+                            $this->tables[$name]->current->indexes[$index->name]->setComparisonObject($index);
                         }
                     }
-                    if (isset($definition['key'])
-                        && $definition['key'] == 'PRI'
-                    ) {
-                        $operations[] = sprintf(
-                            "ALTER TABLE %s ADD PRIMARY KEY(%s)",
-                            $name,
-                            $col
-                        );
-                    }
                 }
-                */
+                $operations = array_merge($operations, $this->tables[$name]->toSql());
             }
         }
 
@@ -207,45 +176,48 @@ abstract class Schema
         // Cleanup: remove tables that are not in the schema (any more)
         foreach ($this->getTables('BASE TABLE') as $table) {
             if (!isset($this->tables[$table]) && !$this->shouldBeIgnored($table)) {
-                $operations = array_merge($operations, (new Sql("DROP TABLE $table CASCADE"))->toSql());
+                $operations[] = "DROP TABLE $table CASCADE";
             }
         }
 
-        // Perform the actual operations and display progress meter
-        echo "\033[100D\033[1;34mPerforming operations for {$this->database}...\n";
+        if (!$operations) {
+            echo "\033[100D\033[1;34m".str_pad("{$this->database} is up to date!", 100, ' ', STR_PAD_RIGHT)."\n\033[0m";
+        } else {
+            // Perform the actual operations and display progress meter
+            echo "\033[100D\033[1;34mPerforming operations for {$this->database}...\n";
 
-        echo "\033[0m";
+            echo "\033[0m";
 
-        $bar = new CliProgressBar(count($operations));
-        $bar->display();
+            $bar = new CliProgressBar(count($operations));
+            $bar->display();
 
-        $bar->setColorToRed();
+            $bar->setColorToRed();
 
-        $fails = [];
-        var_dump($operations);
-        while ($operation = array_shift($operations)) {
-            try {
-                $this->pdo->exec($operation);
-            } catch (PDOException $e) {
-                $fails[$sql] = $e->getMessage();
+            $fails = [];
+            while ($operation = array_shift($operations)) {
+                try {
+                    $this->pdo->exec($operation);
+                } catch (PDOException $e) {
+                    $fails[$sql] = $e->getMessage();
+                }
+                $bar->progress();
+
+                if ($bar->getCurrentstep() >= ($bar->getSteps() / 2)) {
+                    $bar->setColorToYellow();
+                }
             }
-            $bar->progress();
-
-            if ($bar->getCurrentstep() >= ($bar->getSteps() / 2)) {
-                $bar->setColorToYellow();
-            }
-        }
-        
-        $bar->setColorToGreen();
-        $bar->display();
-        
-        $bar->end();
-        echo "\033[0m";
-        if ($fails) {
-            echo "The following operations raised an exception:\n";
-            echo "(This might not be a problem necessarily):\n";
-            foreach ($fails as $command => $reason) {
-                echo "$command: $reason\n";
+            
+            $bar->setColorToGreen();
+            $bar->display();
+            
+            $bar->end();
+            echo "\033[0m";
+            if ($fails) {
+                echo "The following operations raised an exception:\n";
+                echo "(This might not be a problem necessarily):\n";
+                foreach ($fails as $command => $reason) {
+                    echo "$command: $reason\n";
+                }
             }
         }
     }
@@ -285,12 +257,14 @@ abstract class Schema
         $stmt->execute([$this->database, $this->database]);
         if ($fks = $stmt->fetchAll()) {
             foreach ($fks as $row) {
-                $operations[] = sprintf(
-                    "ALTER TABLE %s DROP %s IF EXISTS %s CASCADE",
-                    $row['tbl'],
-                    $row['ctype'],
-                    $row['constr']
-                );
+                if (!$this->shouldBeIgnored($row['constr'])) {
+                    $operations[] = sprintf(
+                        "ALTER TABLE %s DROP %s IF EXISTS %s CASCADE",
+                        $row['tbl'],
+                        $row['ctype'],
+                        $row['constr']
+                    );
+                }
             }
         }
         return $operations;
@@ -305,7 +279,9 @@ abstract class Schema
     {
         $operations = [];
         foreach ($this->getTriggers() as $trigger) {
-            $operations[] = new Sql("DROP TRIGGER $trigger");
+            if (!$this->shouldBeIgnored($trigger)) {
+                $operations[] = "DROP TRIGGER $trigger";
+            }
         }
         return $operations;
     }
@@ -344,8 +320,7 @@ abstract class Schema
                 ROUTINE_TYPE routinetype,
                 ROUTINE_NAME routinename
             FROM INFORMATION_SCHEMA.ROUTINES WHERE
-                ROUTINE_%s = '%s'",
-            static::CATALOG_COLUMN,
+                (ROUTINE_CATALOG = '%1\$s' OR ROUTINE_SCHEMA = '%1\$s')",
             $this->database
         ));
         $stmt->execute();
@@ -356,13 +331,13 @@ abstract class Schema
     {
         $operations = [];
         foreach ($this->getRoutines() as $routine) {
-            if (!$this->shouldIgnore($routine)) {
-                $operations[] = new Sql(sprintf(
+            if (!$this->shouldBeIgnored($routine)) {
+                $operations = array_merge($operations, (new Sql(sprintf(
                     "DROP %s %s%s",
                     $routine['routinetype'],
                     $routine['routinename'],
                     static::DROP_ROUTINE_SUFFIX
-                ));
+                )))->toSql());
             }
         }
         return $operations;
@@ -378,8 +353,7 @@ abstract class Schema
         $stmt = $this->pdo->prepare(sprintf(
             "SELECT TRIGGER_NAME triggername
                 FROM INFORMATION_SCHEMA.TRIGGERS WHERE
-                TRIGGER_%s = '%s'",
-            static::CATALOG_COLUMN,
+                (TRIGGER_CATALOG = '%1\$s' OR TRIGGER_SCHEMA = '%1\$s')",
             $this->database
         ));
         $stmt->execute();
@@ -388,16 +362,6 @@ abstract class Schema
             $triggers[] = $trigger['triggername'];
         }
         return $triggers;
-    }
-
-    public function shouldIgnore($object)
-    {
-        foreach ($this->ignores as $regex) {
-            if (preg_match($regex, $object)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -443,6 +407,40 @@ abstract class Schema
             }
         }
         return false;
+    }
+
+    /**
+     * Get an array of all table names in this database.
+     *
+     * @return array An array of table names.
+     */
+    public function getTables($type = 'BASE TABLE')
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT TABLE_NAME
+                FROM INFORMATION_SCHEMA.TABLES
+                WHERE (TABLE_CATALOG = ? OR TABLE_SCHEMA = ?) AND TABLE_TYPE = ?"
+        );
+        $stmt->execute([$this->database, $this->database, $type]);
+        $names = [];
+        while (false !== ($table = $stmt->fetchColumn())) {
+            $names[] = $table;
+        }
+        return $names;
+    }
+
+    /**
+     * Drops all (non-ignored) views.
+     */
+    public function dropViews()
+    {
+        $operations = [];
+        foreach ($this->getTables('VIEW') as $view) {
+            if (!$this->shouldBeIgnored($view)) {
+                $operations[] = "DROP VIEW IF EXISTS $view";
+            }
+        }
+        return $operations;
     }
 }
 
