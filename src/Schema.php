@@ -5,6 +5,7 @@ namespace Dbmover\Dbmover;
 use PDO;
 use PDOException;
 use Dariuszp\CliProgressBar;
+use Dbmover\Dbmover\Objects\Sql;
 
 /**
  * The main Schema class. This represents a migration for a single unique DSN
@@ -19,12 +20,14 @@ abstract class Schema
     use ColumnHelper;
     use IndexHelper;
     use ProcedureWrapper;
+    use Helper\Ns;
 
     public $pdo;
     public $schemas = [];
     public $database;
     public $ignores = [];
     protected $user;
+    protected $tables;
 
     /**
      * Constructor.
@@ -47,6 +50,17 @@ abstract class Schema
             $this->ignores = $options['ignore'];
         }
         $this->user = $user;
+        echo "\033[0;34m".str_pad(
+            "Loading current schema for {$this->database}...",
+            100,
+            ' ',
+            STR_PAD_RIGHT
+        );
+        foreach ($this->getTables('BASE TABLE') as $table) {
+            if (!$this->shouldBeIgnored($table)) {
+                $this->tables[$table] = $this->create($table, 'Table');
+            }
+        }
     }
 
     /**
@@ -74,7 +88,7 @@ abstract class Schema
      */
     public function processSchemas()
     {
-        echo "\033[0;34m".str_pad(
+        echo "\033[100D\033[0;34m".str_pad(
             "Gathering operations for {$this->database}...",
             100,
             ' ',
@@ -108,19 +122,31 @@ abstract class Schema
 
         $operations = array_merge($operations, $this->dropRecreatables());
 
+        list($sql, $keys) = $this->hoist('@^CREATE(\s+UNIQUE)?\s+INDEX.*?;$@ms', $sql);
+        $indexes = [];
+        $class = $this->getObjectName('Index');
+        foreach ($keys as $key) {
+            $key = $class::fromSql($key);
+            $indexes[$key->name] = $key;
+        }
+
         $tablenames = [];
         foreach ($tables as $table) {
             if (!(preg_match('@^CREATE.*?TABLE (\w+) ?\(@', $table, $name))) {
-                $operations[] = $table;
+                $operations = array_merge($operations, (new Sql($table))->toSql());
                 continue;
             }
             $name = $name[1];
             $tablenames[] = $name;
 
             // If the table doesn't exist yet, create it verbatim.
-            if (!$this->tableExists($name)) {
-                $operations[] = $table;
+            if (!isset($this->tables[$name])) {
+                $operations = array_merge($operations, (new Sql($table))->toSql());
             } else {
+                $class = $this->getObjectName('Table');
+                $this->tables[$name]->setComparisonObject($class::fromSql($table));
+                $operations = array_merge($operations, $this->tables[$name]->toSql());
+                /*
                 $existing = $this->getTableDefinition($name);
                 $new = $this->parseTableDefinition($table);
                 foreach ($existing as $col => $definition) {
@@ -155,6 +181,7 @@ abstract class Schema
                         );
                     }
                 }
+                */
             }
         }
 
@@ -179,10 +206,8 @@ abstract class Schema
 
         // Cleanup: remove tables that are not in the schema (any more)
         foreach ($this->getTables('BASE TABLE') as $table) {
-            if (!in_array($table, $tablenames)
-                && !$this->shouldIgnore($table)
-            ) {
-                $operations[] = "DROP TABLE $table CASCADE";
+            if (!isset($this->tables[$table]) && !$this->shouldBeIgnored($table)) {
+                $operations = array_merge($operations, (new Sql("DROP TABLE $table CASCADE"))->toSql());
             }
         }
 
@@ -197,13 +222,12 @@ abstract class Schema
         $bar->setColorToRed();
 
         $fails = [];
+        var_dump($operations);
         while ($operation = array_shift($operations)) {
             try {
                 $this->pdo->exec($operation);
             } catch (PDOException $e) {
-                if (preg_match("@(ALTER|CREATE)@", $operation)) {
-                    $fails[$operation] = $e->getMessage();
-                }
+                $fails[$sql] = $e->getMessage();
             }
             $bar->progress();
 
@@ -237,7 +261,6 @@ abstract class Schema
     {
         $operations = array_merge(
             $this->dropConstraints(),
-            $this->dropIndexes(),
             $this->dropTriggers(),
             $this->dropRoutines(),
             $this->dropViews()
@@ -253,20 +276,19 @@ abstract class Schema
     public function dropConstraints()
     {
         $operations = [];
-        $stmt = $this->pdo->prepare(sprintf(
-            "SELECT TABLE_NAME tbl, CONSTRAINT_NAME constr
+        $stmt = $this->pdo->prepare(
+            "SELECT TABLE_NAME tbl, CONSTRAINT_NAME constr, CONSTRAINT_TYPE ctype
                 FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-                WHERE CONSTRAINT_TYPE IN ('PRIMARY KEY', 'FOREIGN KEY')
-                    AND CONSTRAINT_%s = ?",
-            static::CATALOG_COLUMN
-        ));
-        $stmt->execute([$this->database]);
+                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
+                    AND (CONSTRAINT_CATALOG = ? OR CONSTRAINT_SCHEMA = ?)"
+        );
+        $stmt->execute([$this->database, $this->database]);
         if ($fks = $stmt->fetchAll()) {
             foreach ($fks as $row) {
                 $operations[] = sprintf(
                     "ALTER TABLE %s DROP %s IF EXISTS %s CASCADE",
                     $row['tbl'],
-                    static::DROP_CONSTRAINT,
+                    $row['ctype'],
                     $row['constr']
                 );
             }
@@ -283,7 +305,7 @@ abstract class Schema
     {
         $operations = [];
         foreach ($this->getTriggers() as $trigger) {
-            $operations[] = "DROP TRIGGER $trigger";
+            $operations[] = new Sql("DROP TRIGGER $trigger");
         }
         return $operations;
     }
@@ -335,12 +357,12 @@ abstract class Schema
         $operations = [];
         foreach ($this->getRoutines() as $routine) {
             if (!$this->shouldIgnore($routine)) {
-                $operations[] = sprintf(
+                $operations[] = new Sql(sprintf(
                     "DROP %s %s%s",
                     $routine['routinetype'],
                     $routine['routinename'],
                     static::DROP_ROUTINE_SUFFIX
-                );
+                ));
             }
         }
         return $operations;
@@ -368,11 +390,6 @@ abstract class Schema
         return $triggers;
     }
 
-    /**
-     * Determine whether an object should be ignored as per config.
-     *
-     * @param string $object The name of the object to test.
-     */
     public function shouldIgnore($object)
     {
         foreach ($this->ignores as $regex) {
@@ -403,6 +420,29 @@ abstract class Schema
     protected function unwrapName($name)
     {
         return $name;
+    }
+
+    protected function create($name, $class, ObjectInterface $parent = null)
+    {
+        $class = $this->getObjectName($class);
+        $object = new $class($name, $parent);
+        $object->setCurrentState($this->pdo, $this->database);
+        return $object;
+    }
+
+    /**
+     * Determine whether an object should be ignored as per config.
+     *
+     * @param string $name The name of the object to test.
+     */
+    protected function shouldBeIgnored($name) : bool
+    {
+        foreach ($this->ignores as $regex) {
+            if (preg_match($regex, $name)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
