@@ -14,8 +14,6 @@ interface ObjectInterface
 
     public function toSql() : array;
 
-    public function drop() : string;
-
     public function setComparisonObject(ObjectInterface $object);
 }
 
