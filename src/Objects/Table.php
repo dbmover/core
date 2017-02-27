@@ -9,6 +9,7 @@ abstract class Table extends Sql
 {
     public $name;
     public $current;
+    public $requested;
     protected static $columns;
     protected static $indexes;
 
@@ -38,24 +39,14 @@ abstract class Table extends Sql
             );
         }
         self::$columns->execute([$database, $database, $this->name]);
-        $this->current = (object)['columns' => []];
+        $this->current = (object)['columns' => [], 'indexes' => []];
+        $this->setCurrentIndexes($pdo, $database);
         $cols = [];
         $class = $this->getObjectName('Column');
         foreach (self::$columns->fetchAll(PDO::FETCH_ASSOC) as $column) {
             $this->current->columns[$column['colname']] = new $class($column['colname'], $this);
             $this->current->columns[$column['colname']]->setCurrentState($pdo, $database);
-            /*
-            if (is_null($column['def']) && $column['nullable'] == 'YES') {
-                $column['def'] = 'NULL';
-            } elseif (!is_null($column['def'])) {
-                $column['def'] = $pdo->quote($column['def']);
-            } else {
-                $column['def'] = '';
-            }
-            $cols[$column['colname']] = $column;
-            */
         }
-        $this->setCurrentIndexes($pdo, $database);
     }
 
     protected abstract function setCurrentIndexes(PDO $pdo, string $database);
@@ -66,44 +57,11 @@ abstract class Table extends Sql
         $class = new static($extr[1], $parent);
         $columnClass = $class->getObjectName('Column');
         $lines = preg_split('@,$@m', rtrim($extr[2]));
-        $class->current = (object)['columns' => []];
+        $class->current = (object)['columns' => [], 'indexes' => []];
         foreach ($lines as $line) {
             $line = trim($line);
-            // Extract the name
             preg_match('@^\w+@', $line, $name);
             $class->current->columns[$name[0]] = $columnClass::fromSql($line, $class);
-            /*
-            $column = [
-                'colname' => '',
-                'def' => null,
-                'nullable' => 'YES',
-                'coltype' => '',
-                'is_serial' => false,
-            ];
-            $column['colname'] = $name[0];
-            $line = preg_replace("@^{$name[0]}@", '', $line);
-            $sql = new \StdClass;
-            $sql->sql = $line;
-            if (!$this->isNullable($sql)) {
-                $column['nullable'] = 'NO';
-                $column['def'] = '';
-            }
-            if ($this->isPrimaryKey($sql)) {
-                $column['key'] = 'PRI';
-            }
-            if ($this->isSerial($sql)) {
-                $column['is_serial'] = true;
-            }
-            if (null !== ($default = $this->getDefaultValue($sql))) {
-                $column['def'] = $default;
-            }
-            if (!isset($column['def'])) {
-                $column['def'] = 'NULL';
-            }
-            $line = preg_replace('@REFERENCES.*?$@', '', $sql->sql);
-            $column['coltype'] = strtolower(trim($line));
-            $columns[$name[0]] = $column;
-            */
         }
         return $class;
     }
@@ -111,30 +69,20 @@ abstract class Table extends Sql
     public function toSql() : array
     {
         $operations = [];
-        foreach ($this->current->columns as $col) {
-            if (isset($this->requested->current->columns[$col->name])) {
-                $col->setComparisonObject($this->requested->current->columns[$col->name]);
+        foreach (['columns', 'indexes'] as $type) {
+            foreach ($this->current->$type as $obj) {
+                if (isset($this->requested->current->$type[$obj->name])) {
+                    $obj->setComparisonObject($this->requested->current->$type[$obj->name]);
+                }
+                $operations = array_merge($operations, $obj->toSql());
             }
-            $operations = array_merge($operations, $col->toSql());
-            /*
-            if (!isset($this->requested->current->columns[$col->name])) {
-                $operations[] = sprintf(
-                    "ALTER TABLE {$this->name} ADD COLUMN {$col->name} {$col->coltype}%s%s",
-                    $col['nullable'] == 'YES' ? ' NOT NULL' : '',
-                    $col['def'] != '' ? 'DEFAULT '.$col['def'] : ''
-                );
-            } else {
-                $operations[] = sprintf(
-                    "ALTER TABLE {$this->name} CHANGE COLUMN {$col->name} {$col->name} {$col->coltype}%s%s",
-                    $col['nullable'] == 'YES' ? ' NOT NULL' : '',
-                    $col['def'] != '' ? 'DEFAULT '.$col['def'] : ''
-                );
-            }
-            */
-        }
-        foreach ($this->requested->current->columns as $col) {
-            if (!isset($this->current->columns[$col->name])) {
-                $operations[] = "ALTER TABLE {$this->parent->name} DROP COLUMN {$col->name}";
+            foreach ($this->requested->current->$type as $obj) {
+                if (!isset($this->current->$type[$obj->name])) {
+                    $class = get_class($obj);
+                    $newobj = new $class($obj->name, $obj->parent);
+                    $newobj->setComparisonObject($obj);
+                    $operations = array_merge($operations, $newobj->toSql());
+                }
             }
         }
         return $operations;
