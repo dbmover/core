@@ -125,6 +125,13 @@ abstract class Schema
             $key = $class::fromSql($key);
             $indexes[$key->name] = $key;
         }
+        list($sql, $keys) = $this->hoist('@^ALTER TABLE (.*?) ADD PRIMARY KEY\s*\(.*?\)@ms', $sql);
+        $indexes = [];
+        $class = $this->getObjectName('Index');
+        foreach ($keys as $key) {
+            $key = $class::fromSql($key);
+            $indexes[$key->name] = $key;
+        }
 
         $tablenames = [];
         foreach ($tables as $table) {
@@ -196,9 +203,9 @@ abstract class Schema
             $fails = [];
             while ($operation = array_shift($operations)) {
                 try {
-                    $this->pdo->exec($operation);
+                    $this->pdo->exec(trim($operation));
                 } catch (PDOException $e) {
-                    $fails[$sql] = $e->getMessage();
+                    $fails[trim($operation)] = $e->getMessage();
                 }
                 $bar->progress();
 
