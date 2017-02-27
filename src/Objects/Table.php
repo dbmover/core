@@ -28,11 +28,7 @@ abstract class Table extends Sql
         if (!isset(self::$columns)) {
             self::$columns = $pdo->prepare(
                 "SELECT
-                    COLUMN_NAME colname,
-                    COLUMN_DEFAULT def,
-                    IS_NULLABLE nullable,
-                    DATA_TYPE coltype,
-                    (EXTRA = 'auto_increment') is_serial
+                    COLUMN_NAME colname
                 FROM INFORMATION_SCHEMA.COLUMNS
                     WHERE (TABLE_CATALOG = ? OR TABLE_SCHEMA = ?) AND TABLE_NAME = ?
                     ORDER BY ORDINAL_POSITION ASC"
