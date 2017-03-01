@@ -52,12 +52,16 @@ abstract class Table extends Sql
         preg_match("@CREATE.*?TABLE (\w+) \((.*)\)@ms", $sql, $extr);
         $class = new static($extr[1], $parent);
         $columnClass = $class->getObjectName('Column');
+        $indexClass = $class->getObjectName('Index');
         $lines = preg_split('@,$@m', rtrim($extr[2]));
         $class->current = (object)['columns' => [], 'indexes' => []];
         foreach ($lines as $line) {
             $line = trim($line);
             preg_match('@^\w+@', $line, $name);
             $class->current->columns[$name[0]] = $columnClass::fromSql($line, $class);
+            if (stripos($line, 'AUTO_INCREMENT')) {
+                $class->current->indexes[$name[0]] = $indexClass::fromSql($line, $class);
+            }
         }
         return $class;
     }
