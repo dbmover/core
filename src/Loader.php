@@ -31,7 +31,7 @@ final class Loader
      * @param array $settings Hash of settings read from `dbmover.json`. See
      *  README.md for further information on possible settings.
      */
-    public function __construct($dsn, array $settings = [])
+    public function __construct(string $dsn, array $settings = [])
     {
         preg_match('@dbname=(\w+)@', $dsn, $database);
         $this->database = $database[1];
@@ -43,7 +43,7 @@ final class Loader
         try {
             $this->pdo = new PDO($dsn, $user, $pass, $options);
         } catch (PDOException $e) {
-            $this->notice(" `$dsn` for `{$settings['user']}` with password `{$settings['pass']}` is unavailable on this machine, skipping.");
+            $this->notice(" `$dsn` for `$user` with password `$pass` is unavailable on this machine, skipping.");
             return;
         }
         if (isset($options['ignore']) && is_array($options['ignore'])) {
