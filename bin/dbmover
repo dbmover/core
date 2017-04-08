@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 
-namespace Dbmover;
+namespace Dbmover\Core;
 
 use Monomelodies\Kingconf\Config;
 use PDOException;
@@ -16,20 +16,9 @@ if (!ini_get('date.timezone')) {
     ini_set('date.timezone', 'UTC');
 }
 
-foreach ([
-    __DIR__.'/../../../autoload.php',
-    __DIR__.'/../../../vendor/autoload.php',
-    __DIR__.'/../../vendor/autoload.php',
-    __DIR__.'/../vendor/autoload.php',
-] as $file) {
-    if (file_exists($file)) {
-        break;
-    }
-    unset($file);
-}
-fwrite(STDOUT, "DbMover 0.5.0 by Marijn Ophorst\n\n");
+fwrite(STDOUT, "DbMover 0.6.0 by Marijn Ophorst\n\n");
 
-if (!isset($file)) {
+if (!file_exists(getcwd().'/vendor/autoload.php')) {
     fwrite(STDERR, <<<EOT
 \033[1;31mError: \033[0mYou need to set up the project dependencies using the following commands:
 
@@ -40,7 +29,7 @@ EOT
     );
     die(1);
 }
-$autoloader = require $file;
+$autoloader = require getcwd().'/vendor/autoload.php';
 
 try {
     $config = (object)(array)(new Config(getcwd().'/dbmover.json'));
@@ -54,57 +43,20 @@ EOT
 }
 
 foreach ($config as $dsn => $settings) {
+    if (isset($argv[2])) {
+        $settings['user'] = $argv[1];
+        $settings['pass'] = $argv[2];
+    } elseif (isset($argv[1])) {
+        $settings['pass'] = $argv[1];
+    }
+    if (!isset($settings['user'])) {
+        $settings['user'] = get_current_user();
+    }
     preg_match('@^(\w+):@', $dsn, $vendor);
     $vendor = ucfirst(strtolower($vendor[1]));
-    $class = "Dbmover\\$vendor\\Schema";
-    if (!class_exists($class)) {
-        fwrite(STDOUT, <<<EOT
-\033[1;035mNotice:\033[0;37m Vendor `$vendor` is unsupported, skipping.\033[0m
-
-EOT
-        );
-        continue;
-    }
     putenv("DBMOVER_VENDOR=$vendor");
-    try {
-        $settings[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
-        $db = new $class($dsn, $settings);
-    } catch (PDOException $e) {
-        fwrite(STDOUT, <<<EOT
-\033[1;035mNotice:\033[0;37m `$dsn` is unavailable on this machine, skipping.\033[0m
-
-EOT
-        );
-        continue;
-    }
-    if (!(isset($settings['schema']) && is_array($settings['schema']))) {
-        fwrite(STDOUT, <<<EOT
-\033[1;035mNotice:\033[0;37m `"schema"` for `$dsn` does not contain an array of file names, skipping.\033[0m
-
-EOT
-        );
-        continue;
-    }
-    $any = false;
-    foreach ($settings['schema'] as $schema) {
-        $work = $schema;
-        if ($work{0} != '/') {
-            $work = getcwd()."/$work";
-        }
-        if (!file_exists($work)) {
-            fwrite(STDOUT, <<<EOT
-\033[1;031mWarning:\033[0;37m `"$schema"` for `$dsn` not found, skipping.\033[0m
-
-EOT
-            );
-            continue;
-        }
-        $any = true;
-        $db->addSchema(file_get_contents($work));
-    }
-    if ($any) {
-        $db->processSchemas();
-    }
-    unset($db);
+    $settings[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
+    $mover = new Loader($dsn, $settings);
+    unset($mover);
 }
 
