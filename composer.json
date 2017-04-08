@@ -1,6 +1,6 @@
 {
-    "name": "dbmover/dbmover",
-    "description": "PHP-based database versioning tool",
+    "name": "dbmover/core",
+    "description": "PHP-based database versioning tool, core components",
     "type": "library",
     "license": "MIT",
     "authors": [
@@ -21,12 +21,12 @@
     ],
     "autoload": {
         "psr-4": {
-            "Dbmover\\Dbmover\\": "src"
+            "Dbmover\\Core\\": "src"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Dbmover\\Dbmover\\Test\\": "tests"
+            "Dbmover\\Test\\": "tests"
         }
     }
 }
