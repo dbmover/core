@@ -78,6 +78,11 @@ final class Loader
         while ($plugin = array_shift($this->plugins)) {
             unset($plugin);
         }
+        $hooks = $settings['hooks'] ?? [];
+        if (isset($hooks['pre'])) {
+            $this->info('Executing pre hook...');
+            exec($hooks['pre']);
+        }
         foreach ($this->operations as $operation) {
             if (is_array($operation)) {
                 list($operation, $hr) = $operation;
@@ -99,19 +104,20 @@ final class Loader
             }
         }
         if (!$this->errors) {
+            if (isset($hooks['post'])) {
+                $this->info('Executing post hook...');
+                exec($hooks['post']);
+            }
             $this->success("Migration for \033[0;35m{$this->database}\033[0;0m completed, 0 errors.");
         } else {
+            if (isset($hooks['rollback'])) {
+                $this->info('Executing rollback hook...');
+                exec($hooks['rollback']);
+            }
             $this->notice("Migration for \033[0;35m{$this->database}\033[0;0m completed, but errors were encountered:\n"
                 ."\033[0;31m".implode("\n", $this->errors)."\033[0;0m");
         }
         fwrite(STDOUT, "\n");
-        /*
-        foreach ($this->getTables('BASE TABLE') as $table) {
-            if (!$this->shouldBeIgnored($table)) {
-                $this->tables[$table] = $this->create($table, 'Table');
-            }
-        }
-        */
     }
 
     /**
@@ -300,342 +306,6 @@ final class Loader
             }
         }
         return false;
-    }
-
-    /**
-     * Process all added schemas.
-     */
-    public function processSchemas()
-    {
-        echo "\033[100D\033[0;34m".str_pad(
-            "Gathering operations for {$this->database}...",
-            100,
-            ' ',
-            STR_PAD_RIGHT
-        );
-        $sql = implode("\n", $this->schemas);
-        list($sql, $drop) = $this->hoist('@^DROP .*?;$@ms', $sql);
-        $operations = $drop;
-        list($sql, $alter) = $this->hoist('@^ALTER TABLE .*?;$@ms', $sql);
-
-        // Gather all conditionals and optionally wrap them in a "lambda".
-        list($sql, $ifs) = $this->hoist('@^IF.*?^END IF;$@ms', $sql);
-        foreach ($ifs as &$if) {
-            $if = $this->wrapInProcedure($if);
-        }
-
-        $operations = array_merge($operations, $ifs);
-        list($sql, $tables) = $this->hoist(
-            '@^CREATE([A-Z]|\s)*(TABLE|SEQUENCE) .*?;$@ms',
-            $sql
-        );
-
-        // Hoist all other recreatable objects.
-        list($sql, $procedures) = $this->hoist(static::REGEX_PROCEDURES, $sql);
-        list($sql, $triggers) = $this->hoist(static::REGEX_TRIGGERS, $sql);
-        $hoists = array_merge($procedures, $triggers);
-        list($sql, $views) = $this->hoist(
-            '@^CREATE VIEW.*?;$@ms',
-            $sql
-        );
-
-        $operations = array_merge($operations, $this->dropRecreatables());
-
-        list($sql, $keys) = $this->hoist('@^CREATE(\s+UNIQUE)?\s+INDEX.*?;$@ms', $sql);
-        $indexes = [];
-        $class = $this->getObjectName('Index');
-        foreach ($keys as $key) {
-            $key = $class::fromSql($key);
-            $indexes[$key->name] = $key;
-        }
-        list($sql, $keys) = $this->hoist('@^ALTER TABLE (.*?) ADD PRIMARY KEY\s*\(.*?\)@ms', $sql);
-        $indexes = [];
-        $class = $this->getObjectName('Index');
-        foreach ($keys as $key) {
-            $key = $class::fromSql($key);
-            $indexes[$key->name] = $key;
-        }
-
-        $tablenames = [];
-        foreach ($tables as $table) {
-            if (!(preg_match('@^CREATE.*?TABLE (\w+) ?\(@', $table, $name))) {
-                $operations[] = $table;
-                continue;
-            }
-            $name = $name[1];
-            $tablenames[] = $name;
-
-            // If the table doesn't exist yet, create it verbatim.
-            if (!isset($this->tables[$name])) {
-                $operations[] = $table;
-            } else {
-                $class = $this->getObjectName('Table');
-                $this->tables[$name]->setComparisonObject($class::fromSql($table));
-                foreach ($indexes as $index) {
-                    if ($index->table == $name) {
-                        $index->parent = $this->tables[$name];
-                        $this->tables[$name]->requested->current->indexes[$index->name] = $index;
-                        if (isset($this->tables[$name]->current->indexes[$index->name])) {
-                            $this->tables[$name]->current->indexes[$index->name]->setComparisonObject($index);
-                        }
-                    }
-                }
-                $operations = array_merge($operations, $this->tables[$name]->toSql());
-            }
-        }
-
-        foreach ($hoists as $hoist) {
-            preg_match('@^CREATE (\w+) (\w+)@', $hoist, $data);
-            if ($data[1] == 'FUNCTION' && $this instanceof Pgsql) {
-                $data[2] .= '()';
-            }
-            $operations[] = "DROP {$data[1]} IF EXISTS {$data[2]}";
-            $operations[] = $hoist;
-        }
-
-        if (strlen(trim($sql))) {
-            $operations[] = $sql;
-        }
-
-        // Cleanup: remove tables that are not in the schema (any more)
-        foreach ($this->getTables('BASE TABLE') as $table) {
-            if (!isset($this->tables[$table]) && !$this->shouldBeIgnored($table)) {
-                $operations[] = "DROP TABLE $table CASCADE";
-            }
-        }
-
-        if (!$operations) {
-            echo "\033[100D\033[1;34m".str_pad("{$this->database} is up to date!", 100, ' ', STR_PAD_RIGHT)."\n\033[0m";
-        } else {
-            // Perform the actual operations and display progress meter
-            echo "\033[100D\033[1;34mPerforming operations for {$this->database}...\n";
-
-            echo "\033[0m";
-
-            $bar = new CliProgressBar(count($operations));
-            $bar->display();
-
-            $bar->setColorToRed();
-
-            $fails = [];
-            while ($operation = array_shift($operations)) {
-                try {
-                    $this->pdo->exec(trim($operation));
-                } catch (PDOException $e) {
-                    $fails[trim($operation)] = $e->getMessage();
-                }
-                $bar->progress();
-
-                if ($bar->getCurrentstep() >= ($bar->getSteps() / 2)) {
-                    $bar->setColorToYellow();
-                }
-            }
-            
-            $bar->setColorToGreen();
-            $bar->display();
-            
-            $bar->end();
-            echo "\033[0m";
-            if ($fails) {
-                echo "The following operations raised an exception:\n";
-                echo "(This might not be a problem necessarily):\n";
-                foreach ($fails as $command => $reason) {
-                    echo "$command: $reason\n";
-                }
-            }
-        }
-    }
-
-    /**
-     * Drops all recreatable objects (views, procedures, indexes etc.) from the
-     * current database so they can safely be recreated during the upgrade
-     * process.
-     *
-     * @return array Array of SQL operations.
-     */
-    public function dropRecreatables()
-    {
-        $operations = array_merge(
-            $this->dropConstraints(),
-            $this->dropTriggers(),
-            $this->dropRoutines(),
-            $this->dropViews()
-        );
-        return $operations;
-    }
-
-    /**
-     * Generate drop statements for all foreign key constraints in the database.
-     *
-     * @return array Array of SQL operations.
-     */
-    public function dropConstraints()
-    {
-        $operations = [];
-        $stmt = $this->pdo->prepare(
-            "SELECT TABLE_NAME tbl, CONSTRAINT_NAME constr, CONSTRAINT_TYPE ctype
-                FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-                WHERE CONSTRAINT_TYPE = 'FOREIGN KEY'
-                    AND (CONSTRAINT_CATALOG = ? OR CONSTRAINT_SCHEMA = ?)"
-        );
-        $stmt->execute([$this->database, $this->database]);
-        if ($fks = $stmt->fetchAll()) {
-            foreach ($fks as $row) {
-                if (!$this->shouldBeIgnored($row['constr'])) {
-                    $operations[] = sprintf(
-                        "ALTER TABLE %s DROP %s IF EXISTS %s CASCADE",
-                        $row['tbl'],
-                        $row['ctype'],
-                        $row['constr']
-                    );
-                }
-            }
-        }
-        return $operations;
-    }
-
-    /**
-     * Generate drop statements for all triggers in the database.
-     *
-     * @return array Array of SQL operations.
-     */
-    public function dropTriggers()
-    {
-        $operations = [];
-        foreach ($this->getTriggers() as $trigger) {
-            if (!$this->shouldBeIgnored($trigger)) {
-                $operations[] = "DROP TRIGGER $trigger";
-            }
-        }
-        return $operations;
-    }
-
-    /**
-     * Hoist all matches of $regex from the provided SQL string, and return them
-     * as an array for further processing.
-     *
-     * @param string $regex Regular expression to hoist.
-     * @param string $sql Reference to the SQL string to hoist from. Hoisted
-     *  statements are removed from this string.
-     * @return array An array containing the modified SQL (index 0) and an array
-     *  of hoisted statements at index 1 (or an empty array if nothing matched).
-     */
-    public function hoist($regex, $sql)
-    {
-        $hoisted = [];
-        if (preg_match_all($regex, $sql, $matches, PREG_SET_ORDER)) {
-            foreach ($matches as $stmt) {
-                $hoisted[] = $stmt[0];
-                $sql = str_replace($stmt[0], '', $sql);
-            }
-        }
-        return [$sql, $hoisted];
-    }
-
-    /**
-     * Return a list of all routines in the current catalog.
-     *
-     * @return array Array of routines, including meta-information.
-     */
-    public function getRoutines()
-    {
-        $stmt = $this->pdo->prepare(sprintf(
-            "SELECT
-                ROUTINE_TYPE routinetype,
-                ROUTINE_NAME routinename
-            FROM INFORMATION_SCHEMA.ROUTINES WHERE
-                (ROUTINE_CATALOG = '%1\$s' OR ROUTINE_SCHEMA = '%1\$s')",
-            $this->database
-        ));
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function dropRoutines()
-    {
-        $operations = [];
-        foreach ($this->getRoutines() as $routine) {
-            if (!$this->shouldBeIgnored($routine)) {
-                $operations = array_merge($operations, (new Sql(sprintf(
-                    "DROP %s %s%s",
-                    $routine['routinetype'],
-                    $routine['routinename'],
-                    static::DROP_ROUTINE_SUFFIX
-                )))->toSql());
-            }
-        }
-        return $operations;
-    }
-
-    /**
-     * Return a list of all triggers in the current catalog.
-     *
-     * @return array Array of trigger names.
-     */
-    public function getTriggers()
-    {
-        $stmt = $this->pdo->prepare(sprintf(
-            "SELECT TRIGGER_NAME triggername
-                FROM INFORMATION_SCHEMA.TRIGGERS WHERE
-                (TRIGGER_CATALOG = '%1\$s' OR TRIGGER_SCHEMA = '%1\$s')",
-            $this->database
-        ));
-        $stmt->execute();
-        $triggers = [];
-        foreach ($stmt->fetchAll() as $trigger) {
-            $triggers[] = $trigger['triggername'];
-        }
-        return $triggers;
-    }
-
-    /**
-     * Vendor-specifically wrap an object name (e.g. in `...` for MySQL).
-     *
-     * @param string $name The name to wrap.
-     * @return string A wrapped name.
-     */
-    protected function wrapName($name)
-    {
-        return $name;
-    }
-    
-    /**
-     * Vendor-specifically unwrap an object name (e.g. remote `...` for MySQL).
-     *
-     * @param string $name The name to unwrap.
-     * @return string An unwrapped name.
-     */
-    protected function unwrapName($name)
-    {
-        return $name;
-    }
-
-    protected function create($name, $class, ObjectInterface $parent = null)
-    {
-        $class = $this->getObjectName($class);
-        $object = new $class($name, $parent);
-        $object->setCurrentState($this->pdo, $this->database);
-        return $object;
-    }
-
-    /**
-     * Get an array of all table names in this database.
-     *
-     * @return array An array of table names.
-     */
-    public function getTables($type = 'BASE TABLE')
-    {
-        $stmt = $this->pdo->prepare(
-            "SELECT TABLE_NAME
-                FROM INFORMATION_SCHEMA.TABLES
-                WHERE (TABLE_CATALOG = ? OR TABLE_SCHEMA = ?) AND TABLE_TYPE = ?"
-        );
-        $stmt->execute([$this->database, $this->database, $type]);
-        $names = [];
-        while (false !== ($table = $stmt->fetchColumn())) {
-            $names[] = $table;
-        }
-        return $names;
     }
 }
 
