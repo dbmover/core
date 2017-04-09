@@ -19,6 +19,7 @@ final class Loader
 
     private $pdo;
     private $operations = [];
+    private $vendor;
     private $database;
     private $plugins = [];
     private $user;
@@ -33,6 +34,8 @@ final class Loader
      */
     public function __construct(string $dsn, array $settings = [])
     {
+        preg_match('@^(\w+)?:@', $dsn, $vendor);
+        $this->vendor = $vendor[1];
         preg_match('@dbname=(\w+)@', $dsn, $database);
         $this->database = $database[1];
         $user = $settings['user'] ?? null;
@@ -83,6 +86,9 @@ final class Loader
             }
             $this->sql($operation, $hr);
         }
+        // Strip remaining comments:
+        $sql = preg_replace("@^--.*?$@", '', $sql);
+
         $left = trim($sql);
         if (strlen($left)) {
             $lines = count(explode("\n", $left));
@@ -178,6 +184,16 @@ final class Loader
     public function getPdo() : PDO
     {
         return $this->pdo;
+    }
+
+    /**
+     * Expose the name of the current vendor.
+     *
+     * @return string
+     */
+    public function getVendor() : string
+    {
+        return $this->vendor;
     }
 
     /**
