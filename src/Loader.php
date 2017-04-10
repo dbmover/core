@@ -23,6 +23,7 @@ final class Loader
     private $database;
     private $plugins = [];
     private $user;
+    private $description = 'DbMoving';
 
     /**
      * Constructor.
@@ -74,6 +75,7 @@ final class Loader
         $this->errors = [];
         foreach ($this->plugins as $plugin) {
             $sql = $plugin($sql);
+            $plugin->persist();
         }
         while ($plugin = array_shift($this->plugins)) {
             unset($plugin);
@@ -84,15 +86,12 @@ final class Loader
             exec($hooks['pre']);
         }
         foreach ($this->operations as $operation) {
-            if (is_array($operation)) {
-                list($operation, $hr) = $operation;
-            } else {
-                $hr = $operation;
-            }
-            $this->sql($operation, $hr);
+            $this->sql(...$operation);
         }
-        // Strip remaining comments:
-        $sql = preg_replace("@^--.*?$@", '', $sql);
+        // Strip remaining comments
+        $sql = preg_replace("@^--.*?$@m", '', $sql);
+        // and superfluous whitespace
+        $sql = preg_replace("@^\n{2,}@m", "\n", $sql);
 
         $left = trim($sql);
         if (strlen($left)) {
@@ -114,8 +113,11 @@ final class Loader
                 $this->info('Executing rollback hook...');
                 exec($hooks['rollback']);
             }
-            $this->notice("Migration for \033[0;35m{$this->database}\033[0;0m completed, but errors were encountered:\n"
-                ."\033[0;31m".implode("\n", $this->errors)."\033[0;0m");
+            $this->notice("Migration for \033[0;35m{$this->database}\033[0;0m completed, but errors were encountered.");
+            foreach ($this->errors as $sql => $message) {
+                $this->notice($sql);
+                $this->error($message);
+            }
         }
         fwrite(STDOUT, "\n");
     }
@@ -161,24 +163,38 @@ final class Loader
     }
 
     /**
-     * Execute and display SQL feedback.
+     * Execute a batch of SQL statements and display feedback.
      *
-     * @param string $sql
-     * @param string $hr Human readable form
+     * @param string $description Description
+     * @param array $sqls Array of SQL statements
      */
-    public function sql(string $sql, string $hr)
+    public function sql(string $description, array $sqls)
     {
-        $hr = trim($hr);
-        if (strlen($hr) > 94) {
-            $hr = substr(preg_replace("@\s+@m", ' ', $hr), 0, 94)." \033[0;33m[...]";
+        $description = trim($description);
+        if (strlen($description) > 94) {
+            $description = substr(preg_replace("@\s+@m", ' ', $description), 0, 94)." \033[0;33m[...]";
         }
-        fwrite(STDOUT, "\033[0;36mSQL:\033[0;39m $hr ");
-        try {
-            $this->pdo->exec(trim($sql));
-            fwrite(STDOUT, "\033 [0;32m[Ok]\033\n");
-        } catch (PDOException $e) {
-            $this->errors[trim($sql)] = $e->getMessage();
-            fwrite(STDOUT, "\033 [0;31m[Error]\033\n");
+        fwrite(STDOUT, "\033[0;36mSQL:\033[0;39m $description \033[0;37m  0%");
+        $error = false;
+        $orig = count($sqls);
+        $done = 0;
+        while ($sql = array_shift($sqls)) {
+            try {
+                $this->pdo->exec(trim($sql));
+            } catch (PDOException $e) {
+                $this->errors[trim($sql)] = $e->getMessage();
+                $error = true;
+            }
+            $done++;
+            fwrite(STDOUT, sprintf(
+                "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;D%s%%",
+                str_pad(round($done / $orig * 100), 4, ' ', STR_PAD_LEFT)
+            ));
+        }
+        if ($error) {
+            fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;31m[Error]\033\n");
+        } else {
+            fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;32m[Ok]\033\n");
         }
     }
 
@@ -223,6 +239,16 @@ final class Loader
     }
 
     /**
+     * Set the description to show when the current batch runs.
+     *
+     * @param string $description
+     */
+    public function setDescription(string $description)
+    {
+        $this->description = $description;
+    }
+
+    /**
      * Attempt to load all requested plugins. A plugin may be defined either by
      * its Composer package name or a PSR-resolvable namespace (in both of which
      * cases, the classname must be `Plugin`), or a fully resolvable classname.
@@ -249,17 +275,22 @@ final class Loader
                 if (!$classname || !class_exists($classname)) {
                     throw new PluginUnavailableException($plugin);
                 }
-                $this->plugins[] = new $classname($this);
+                $this->addPlugin(new $classname($this));
             } elseif (class_exists("$plugin\\Plugin")) {
                 $class = "$plugin\\Plugin";
-                $this->plugins[] = new $class($this);
+                $this->addPlugin(new $class($this));
             } elseif (class_exists($plugin)) {
-                $this->plugins[] = new $plugin($this);
+                $this->addPlugin(new $plugin($this));
             } else {
                 throw new PluginUnavailableException($plugin);
             }
             $this->success("Loaded $plugin.");
         }
+    }
+
+    public function addPlugin(PluginInterface $plugin)
+    {
+        $this->plugins[] = $plugin;
     }
 
     /**
@@ -282,14 +313,14 @@ final class Loader
     }
 
     /**
-     * Adds an operation to the list.
+     * Adds a batch of operations to the list.
      *
-     * @param string $sql The SQL for the operation.
-     * @param string $hr Optional human readable form.
+     * @param string $description Description.
+     * @param array $sqls Array of SQL statements for the operation.
      */
-    public function addOperation(string $sql, string $hr = null)
+    public function addOperation(string $description, array $sqls)
     {
-        $this->operations[] = isset($hr) ? [$sql, $hr] : $sql;
+        $this->operations[] = [$description, $sqls];
     }
 
     /**
