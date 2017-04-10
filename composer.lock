@@ -4,42 +4,9 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "69c0d00a391d27be82479a43ad14ebea",
-    "content-hash": "92ca82f0b836b4bedb64e1b118bddc0b",
+    "hash": "328849e8853a068499bd3d968d7010ec",
+    "content-hash": "8c46e24392999239b4ac8222dcf29ac7",
     "packages": [
-        {
-            "name": "dariuszp/cli-progress-bar",
-            "version": "1.0.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/dariuszp/cli-progress-bar.git",
-                "reference": "54020a8fc60bf19579bfe0317f17a2848d48991d"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/dariuszp/cli-progress-bar/zipball/54020a8fc60bf19579bfe0317f17a2848d48991d",
-                "reference": "54020a8fc60bf19579bfe0317f17a2848d48991d",
-                "shasum": ""
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Dariuszp\\": "src/Dariuszp"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Dariusz Półtorak",
-                    "email": "poltorak.dariusz@gmail.com"
-                }
-            ],
-            "description": "Cli progress bar",
-            "time": "2015-11-02 14:38:59"
-        },
         {
             "name": "monomelodies/kingconf",
             "version": "1.1.0",
@@ -92,25 +59,31 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v3.1.2",
+            "version": "v3.2.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "2884c26ce4c1d61aebf423a8b912950fe7c764de"
+                "reference": "62b4cdb99d52cb1ff253c465eb1532a80cebb621"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/2884c26ce4c1d61aebf423a8b912950fe7c764de",
-                "reference": "2884c26ce4c1d61aebf423a8b912950fe7c764de",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/62b4cdb99d52cb1ff253c465eb1532a80cebb621",
+                "reference": "62b4cdb99d52cb1ff253c465eb1532a80cebb621",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.5.9"
             },
+            "require-dev": {
+                "symfony/console": "~2.8|~3.0"
+            },
+            "suggest": {
+                "symfony/console": "For validating YAML files using the lint command"
+            },
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "3.1-dev"
+                    "dev-master": "3.2-dev"
                 }
             },
             "autoload": {
@@ -137,22 +110,22 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "https://symfony.com",
-            "time": "2016-06-29 05:41:56"
+            "time": "2017-03-20 09:45:15"
         }
     ],
     "packages-dev": [
         {
             "name": "gentry/gentry",
-            "version": "0.10.2",
+            "version": "0.10.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/gentry-php/gentry.git",
-                "reference": "096849915d0e7957f61470829df6961709afc2d3"
+                "reference": "4e97d4d754b3d6624a3a3d24c63d5c80ad9d0726"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/gentry-php/gentry/zipball/096849915d0e7957f61470829df6961709afc2d3",
-                "reference": "096849915d0e7957f61470829df6961709afc2d3",
+                "url": "https://api.github.com/repos/gentry-php/gentry/zipball/4e97d4d754b3d6624a3a3d24c63d5c80ad9d0726",
+                "reference": "4e97d4d754b3d6624a3a3d24c63d5c80ad9d0726",
                 "shasum": ""
             },
             "require": {
@@ -181,7 +154,7 @@
                 }
             ],
             "description": "PHP unit test generation tools",
-            "time": "2016-07-15 06:45:41"
+            "time": "2016-10-09 14:45:24"
         },
         {
             "name": "simoneast/simple-ansi-colors",
