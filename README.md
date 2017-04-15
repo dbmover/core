@@ -1,5 +1,5 @@
-# DbMover
-A PHP-based database versioning tool.
+# DbMover\Core
+PHP-based database versioning tool, core package.
 
 ## Installation
 The recommended way of installing DbMover is via
