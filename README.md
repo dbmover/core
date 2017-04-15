@@ -102,8 +102,8 @@ guess what you could/should do in there...
 All hooks are _optional_.
 
 Each hook receives three arguments: the DSN, the username and the password. If
-the username wasn't supplied (see above) they will receive just two arguments.
-These arguments can be used to (re)connect to the database if needed.
+the username wasn't supplied (see above) the system user name is passed. These
+arguments can be used to (re)connect to the database if needed.
 
 ## Running DbMover
 Simply execute `vendor/bin/dbmover`, optionally supplying username/password as
@@ -214,14 +214,11 @@ Just remove them from the schema and re-run. Again: they'll be really gone.
 Depending on your database vendor, it may be allowed to specify these during
 table creation. Support for this is still _very_ experimental and most
 definitely not complete. _So don't do that if possible._ Instead, create these
-constraints after table creation using `ALTER TABLE` statements.
+constraints after table creation using `CREATE INDEX` or `ALTER TABLE`
+statements.
 
 Primary keys may already be speficied in the `CREATE TABLE` block. Other
 constraints are still a work in progress.
-
-> For extremely large tables, recreating indexes might considerably slow down
-> the moving process. C'est la vie. Non-primary named indexes are skipped if
-> DbMover determines them to be up to date.
 
 ### Loose `ALTER` statements
 Sometimes you need to `ALTER` a table after creation specifically, e.g. when it
@@ -255,7 +252,8 @@ purpose).
 
 ## Conditionals
 DbMover supports, via the `dbmover/conditionals` plugin, the inclusion of `IF`
-blocks in your schema.
+blocks in your schema. This is an extension on SQL in that these blocks are
+generally only allowed inside procedures. DbMover will wrap them for you.
 
 ## Inserting default data
 To prevent duplicate inserts, these should be wrapped in an `IF NOT EXISTS ()`
