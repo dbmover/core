@@ -17,6 +17,7 @@ final class Loader
     public $ignores = [];
     protected $tables;
 
+    private $dsn;
     private $pdo;
     private $operations = [];
     private $vendor;
@@ -24,6 +25,7 @@ final class Loader
     private $plugins = [];
     private $user;
     private $description = 'DbMoving';
+    private $settings;
 
     /**
      * Constructor.
@@ -35,6 +37,8 @@ final class Loader
      */
     public function __construct(string $dsn, array $settings = [])
     {
+        $this->dsn = $dsn;
+        $this->settings = $settings;
         preg_match('@^(\w+)?:@', $dsn, $vendor);
         $this->vendor = $vendor[1];
         preg_match('@dbname=(\w+)@', $dsn, $database);
@@ -83,7 +87,7 @@ final class Loader
         $hooks = $settings['hooks'] ?? [];
         if (isset($hooks['pre'])) {
             $this->info('Executing pre hook...');
-            exec($hooks['pre']);
+            $this->executeHook($hooks['pre']);
         }
         foreach ($this->operations as $operation) {
             $this->sql(...$operation);
@@ -105,13 +109,13 @@ final class Loader
         if (!$this->errors) {
             if (isset($hooks['post'])) {
                 $this->info('Executing post hook...');
-                exec($hooks['post']);
+                $this->executeHook($hooks['post']);
             }
             $this->success("Migration for \033[0;35m{$this->database}\033[0;0m completed, 0 errors.");
         } else {
             if (isset($hooks['rollback'])) {
                 $this->info('Executing rollback hook...');
-                exec($hooks['rollback']);
+                $this->executeHook($hooks['rollback']);
             }
             $this->notice("Migration for \033[0;35m{$this->database}\033[0;0m completed, but errors were encountered.");
             foreach ($this->errors as $sql => $message) {
@@ -337,6 +341,14 @@ final class Loader
             }
         }
         return false;
+    }
+
+    private function executeHook(string $command)
+    {
+        $dsn = escapeshellarg($this->dsn);
+        $user = escapeshellarg($this->settings['user']);
+        $pass = escapeshellarg($this->settings['pass']);
+        exec("$command $dsn $user $pass");
     }
 }
 
