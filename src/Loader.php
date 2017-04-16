@@ -265,8 +265,8 @@ final class Loader
     public function loadPlugins(string ...$plugins)
     {
         foreach ($plugins as $plugin) {
-            if (file_exists(getcwd()."/vendor/$plugin/Plugin.php")) {
-                $src = file_get_contents(getcwd()."/vendor/$plugin/Plugin.php");
+            if (file_exists(getcwd()."/vendor/$plugin/src.Plugin.php")) {
+                $src = file_get_contents(getcwd()."/vendor/$plugin/src/Plugin.php");
                 $classname = false;
                 if (preg_match("@class (\w+)@m", $src, $classname)) {
                     $classname = $classname[1];
