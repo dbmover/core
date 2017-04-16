@@ -13,10 +13,9 @@ use Dbmover\Dbmover\Objects\Sql;
  */
 final class Loader
 {
-    public $schemas = [];
-    public $ignores = [];
-    protected $tables;
-
+    private $schemas = [];
+    private $ignores = [];
+    private $errors = [];
     private $dsn;
     private $pdo;
     private $operations = [];
@@ -84,11 +83,6 @@ final class Loader
         while ($plugin = array_shift($this->plugins)) {
             unset($plugin);
         }
-        $hooks = $settings['hooks'] ?? [];
-        if (isset($hooks['pre'])) {
-            $this->info('Executing pre hook...');
-            $this->executeHook($hooks['pre']);
-        }
         foreach ($this->operations as $operation) {
             $this->sql(...$operation);
         }
@@ -107,16 +101,8 @@ final class Loader
             }
         }
         if (!$this->errors) {
-            if (isset($hooks['post'])) {
-                $this->info('Executing post hook...');
-                $this->executeHook($hooks['post']);
-            }
             $this->success("Migration for \033[0;35m{$this->database}\033[0;0m completed, 0 errors.");
         } else {
-            if (isset($hooks['rollback'])) {
-                $this->info('Executing rollback hook...');
-                $this->executeHook($hooks['rollback']);
-            }
             $this->notice("Migration for \033[0;35m{$this->database}\033[0;0m completed, but errors were encountered.");
             foreach ($this->errors as $sql => $message) {
                 $this->notice($sql);
@@ -250,6 +236,16 @@ final class Loader
     public function setDescription(string $description)
     {
         $this->description = $description;
+    }
+
+    /**
+     * Expose any errors encountered.
+     *
+     * @return array
+     */
+    public function getErrors() : array
+    {
+        return $this->errors;
     }
 
     /**
