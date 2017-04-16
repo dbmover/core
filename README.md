@@ -40,12 +40,7 @@ your project (i.e., two folders up from `vendor/bin`). The format is as follows:
         "user": "yourUserName",
         "pass": "something secret",
         "schema": ["path/to/file1.sql", "path/to/file2.sql"[, ...]],
-        "plugins": [],
-        "hooks": {
-            "pre": "/path/to/pre-command",
-            "post": "/path/to/post-command",
-            "rollback": "/path/to/rollback-command"
-        }
+        "plugins": []
     }
 }
 ```
@@ -89,21 +84,6 @@ An array of plugins DbMover will load to perform the migration. By using
 plugins, we make DbMover _very_ configurable to your exact needs. Each plugin is
 denoted by either its Composer package name (e.g. "some/plugin") or a classname
 autoloadable by Composer (e.g. "My\\Custom\\Plugin"). More on plugins below.
-
-### `hooks`
-An optional hash of hook scripts to run at various parts of this migration. The
-`pre` hook is run _before_ anything else, and could e.g. backup your database,
-signal to your application that it's down for maintainance mode etc. The `post`
-hook is run after a successful migration and can be used e.g. to bring your
-application out of maintainance mode, clean any backups etc. The `rollback` hook
-is run whenever DbMover encounters an error in one of your schemas. You can
-guess what you could/should do in there...
-
-All hooks are _optional_.
-
-Each hook receives three arguments: the DSN, the username and the password. If
-the username wasn't supplied (see above) the system user name is passed. These
-arguments can be used to (re)connect to the database if needed.
 
 ## Running DbMover
 Simply execute `vendor/bin/dbmover`, optionally supplying username/password as
@@ -266,6 +246,10 @@ IF NOT EXISTS (SELECT 1 FROM mytable WHERE id = 1) THEN
 END IF;
 ```
 
+This will usually require the `dbmover/VENDOR-conditionals` plugin (which isn't
+bundled in the meta-packages). See `dbmover/mysql-conditionals` and
+`dbmover/pgsql-conditionals` for more information.
+
 ## Transferring data from one table to another
 This is sometimes necessary. In these cases, you should use `IF` blocks and
 query e.g. `INFORMATION_SCHEMA` (depending on your vendor) to determine if the
@@ -281,6 +265,8 @@ IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE ...) THEN
     INSERT INTO target SELECT * FROM original;
 END IF;
 ```
+
+Also, see the note in the previous section about conditionals.
 
 ## Caveats
 
@@ -305,9 +291,9 @@ Databases may or may not be case-sensitive; keep in mind that DbMover _is_
 case-sensitive, so just be consistent in your spelling.
 
 ### Storage engines and collations
-DbMover ignores these. The assumption is that modifying these are a risky and
-very rare operation that you want to do manually and/or monitor more closely
-anyway.
+Currently DbMover ignores these. Support for MySQL is planned; for PostgreSQL,
+changing the collation is a database-wide operation which cannot be handled by
+DbMover (it requires recreation of the entire database).
 
 ### Test your schema first
 Always run DbMover against a test database for an updated schema. Everybody
@@ -320,26 +306,63 @@ might take a few minutes. You don't want users editing any data while the schema
 isn't in a stable state yet!
 
 How your application handles its down state is not up to DbMover. A simple way
-would be to wrap the DbMover call in a script of your own, e.g.:
+would be to wrap write your own plugins for this:
 
-```sh
-touch down
-vendor/bin/dbmover
-rm down
+```json
+{
+    "dsn": {
+        "plugins": ['Myplugins\\Down', ..., 'Myplugins\\Up']
+    }
+}
 ```
 
-...and in your application something like:
+A simple way to handle down/up states would be to write an empty file (e.g.
+called simply `down`) in the root of your application, check for it in a front
+controller, and remove it when bringing the application up again. A very basic
+example:
+
 ```php
 <?php
 
-if (file_exists('down')) {
+namespace Myplugins;
+
+use Dbmover\Core\PluginInterface;
+
+class Down implements PluginInterface
+{
+    public $description = 'Bringing application down...';
+
+    public function __invoke(string $sql) : string
+    {
+        $cwd = getcwd();
+        `touch $cwd/down`;
+        return $sql;
+    }
+}
+
+class Up implements PluginInterface
+{
+    public $description = 'Briging application back up...';
+
+    public function __destruct()
+    {
+        $cwd = getcwd();
+        `rm $cwd/down`;
+        parent::__destruct();
+    }
+}
+```
+
+...and in your front controller (in this example, simply `index.php`):
+
+```php
+<?php
+
+if (file_exists('/path/to/down')) {
     die("Application is down for maintainance.");
 }
 // ...other code...
 ```
-
-This is of course an extremely simple example but should point you in the right
-direction.
 
 ### Backup your database before migration
 If you tested against an actual copy and it worked fine this shouldn't be
@@ -348,6 +371,11 @@ the migration!
 
 Besides, the simple fact that the script runs correctly doesn't necessarily mean
 it did what you intended. Always verify your data after a migration.
+
+Using the `Up` and `Down` custom plugins from the previous section, you could
+handle this automatically. Use the Loader's `getErrors()` method to see if a
+rollback is required or you can simply remove the backup (or keep it just in
+case manual inspection happens to turn up something fishy).
 
 ## Contributing
 SQLite support is sort-of planned for the near future, but is not extremely high
@@ -361,4 +389,12 @@ the repository and send us a pull request!
 There's no formal style guide, but look at the existing code and please try to
 keep your coding style consitent with it. If you work on vendors I can't/won't
 support, please also make sure you add unit tests for those.
+
+Contributions are also very welcome in the form of bug reports (please file
+against the affected package!) and feature requests (vendor support is by no
+means exhaustive yet, just the most-used options).
+
+Plugin packages sometimes also contain a TODO-list in their `README.md`. If your
+request is already listed there, there's no need to report it since it's already
+on the roadmap.
 
