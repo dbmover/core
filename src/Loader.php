@@ -338,13 +338,5 @@ final class Loader
         }
         return false;
     }
-
-    private function executeHook(string $command)
-    {
-        $dsn = escapeshellarg($this->dsn);
-        $user = escapeshellarg($this->settings['user']);
-        $pass = escapeshellarg($this->settings['pass']);
-        exec("$command $dsn $user $pass");
-    }
 }
 
