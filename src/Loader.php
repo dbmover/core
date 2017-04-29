@@ -33,6 +33,7 @@ final class Loader
      *  PHP's `PDO` constructor.
      * @param array $settings Hash of settings read from `dbmover.json`. See
      *  README.md for further information on possible settings.
+     * @param bool $silent If true, do not output anything. Defaults to false.
      */
     public function __construct(string $dsn, array $settings = [], bool $silent = false)
     {
