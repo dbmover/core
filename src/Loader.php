@@ -34,10 +34,11 @@ final class Loader
      * @param array $settings Hash of settings read from `dbmover.json`. See
      *  README.md for further information on possible settings.
      */
-    public function __construct(string $dsn, array $settings = [])
+    public function __construct(string $dsn, array $settings = [], bool $silent = false)
     {
         $this->dsn = $dsn;
         $this->settings = $settings;
+        $this->silent = $silent;
         preg_match('@^(\w+)?:@', $dsn, $vendor);
         $this->vendor = $vendor[1];
         preg_match('@dbname=(\w+)@', $dsn, $database);
@@ -109,7 +110,9 @@ final class Loader
                 $this->error($message);
             }
         }
-        fwrite(STDOUT, "\n");
+        if (!$this->silent) {
+            fwrite(STDOUT, "\n");
+        }
     }
 
     /**
@@ -119,7 +122,9 @@ final class Loader
      */
     public function success(string $msg)
     {
-        fwrite(STDOUT, "\033[0;32mOk:\033[0;39m $msg\n");
+        if (!$this->silent) {
+            fwrite(STDOUT, "\033[0;32mOk:\033[0;39m $msg\n");
+        }
     }
 
     /**
@@ -129,7 +134,9 @@ final class Loader
      */
     public function notice(string $msg)
     {
-        fwrite(STDOUT, "\033[0;33mNotice:\033[0;39m $msg\n");
+        if (!$this->silent) {
+            fwrite(STDOUT, "\033[0;33mNotice:\033[0;39m $msg\n");
+        }
     }
 
     /**
@@ -139,7 +146,9 @@ final class Loader
      */
     public function error(string $msg)
     {
-        fwrite(STDERR, "\033[0;031mError:\033[0;39m $msg\n");
+        if (!$this->silent) {
+            fwrite(STDERR, "\033[0;031mError:\033[0;39m $msg\n");
+        }
     }
 
     /**
@@ -149,7 +158,9 @@ final class Loader
      */
     public function info(string $msg)
     {
-        fwrite(STDOUT, "\033[0;34mInfo:\033[0;39m $msg\n");
+        if (!$this->silent) {
+            fwrite(STDOUT, "\033[0;34mInfo:\033[0;39m $msg\n");
+        }
     }
 
     /**
@@ -164,7 +175,9 @@ final class Loader
         if (strlen($description) > 94) {
             $description = substr(preg_replace("@\s+@m", ' ', $description), 0, 94)." \033[0;33m[...]";
         }
-        fwrite(STDOUT, "\033[0;36mSQL:\033[0;39m $description \033[0;37m  0%");
+        if (!$this->silent) {
+            fwrite(STDOUT, "\033[0;36mSQL:\033[0;39m $description \033[0;37m  0%");
+        }
         $error = false;
         $orig = count($sqls);
         $done = 0;
@@ -176,15 +189,19 @@ final class Loader
                 $error = true;
             }
             $done++;
-            fwrite(STDOUT, sprintf(
-                "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;D%s%%",
-                str_pad(round($done / $orig * 100), 4, ' ', STR_PAD_LEFT)
-            ));
+            if (!$this->silent) {
+                fwrite(STDOUT, sprintf(
+                    "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;D%s%%",
+                    str_pad(round($done / $orig * 100), 4, ' ', STR_PAD_LEFT)
+                ));
+            }
         }
-        if ($error) {
-            fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;31m[Error]\033\n");
-        } else {
-            fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;32m[Ok]\033\n");
+        if (!$this->silent) {
+            if ($error) {
+                fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;31m[Error]\033\n");
+            } else {
+                fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;32m[Ok]\033\n");
+            }
         }
     }
 
