@@ -76,5 +76,20 @@ abstract class Plugin implements PluginInterface
             $this->loader->addOperation($this->description, $this->deferredStatements);
         }
     }
+
+    /**
+     * "Spawns" a child plugin. Useful for when one plugin should nest another
+     * (i.e. PlugA::operations > PlugB::operations > PlugB::deferred >
+     * PlugA::deferred).
+     *
+     * @param string $plugin Fully qualified classname of the plugin to spwan.
+     * @return void
+     */
+    public function spawn(string $plugin) : void
+    {
+        $plugin = new $plugin($this->loader);
+        $plugin->persist();
+        unset($plugin);
+    }
 }
 
