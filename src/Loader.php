@@ -37,6 +37,7 @@ final class Loader
      */
     public function __construct(string $dsn, array $settings = [], bool $silent = false)
     {
+        global $argv;
         $this->dsn = $dsn;
         $this->settings = $settings;
         $this->silent = $silent;
@@ -85,8 +86,9 @@ final class Loader
         while ($plugin = array_shift($this->plugins)) {
             unset($plugin);
         }
+        $stmts = [];
         foreach ($this->operations as $operation) {
-            $this->sql(...$operation);
+            $stmts = array_merge($stmts, $this->sql(...$operation));
         }
         // Strip remaining comments
         $sql = preg_replace("@^--.*?$@m", '', $sql);
@@ -113,6 +115,11 @@ final class Loader
         }
         if (!$this->silent) {
             fwrite(STDOUT, "\n");
+        }
+        if (isset($argv[1]) && $argv[1] == '--dry-run') {
+            foreach ($stmts as $stmt) {
+                fwrite(STDOUT, trim($stmt)."\n");
+            }
         }
     }
 
@@ -169,9 +176,11 @@ final class Loader
      *
      * @param string $description Description
      * @param array $sqls Array of SQL statements
+     * @return array Array of SQL statements
      */
-    public function sql(string $description, array $sqls)
+    public function sql(string $description, array $sqls) : array
     {
+        global $argv;
         $description = trim($description);
         if (strlen($description) > 94) {
             $description = substr(preg_replace("@\s+@m", ' ', $description), 0, 94)." \033[0;33m[...]";
@@ -182,12 +191,16 @@ final class Loader
         $error = false;
         $orig = count($sqls);
         $done = 0;
+        $stmts = [];
         while ($sql = array_shift($sqls)) {
-            try {
-                $this->pdo->exec(trim($sql));
-            } catch (PDOException $e) {
-                $this->errors[trim($sql)] = $e->getMessage();
-                $error = true;
+            $stmts[] = trim($sql);
+            if (!(isset($argv[1]) && $argv[1] == '--dry-run')) {
+                try {
+                    $this->pdo->exec(trim($sql));
+                } catch (PDOException $e) {
+                    $this->errors[trim($sql)] = $e->getMessage();
+                    $error = true;
+                }
             }
             $done++;
             if (!$this->silent) {
@@ -204,6 +217,7 @@ final class Loader
                 fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;32m[Ok]\033\n");
             }
         }
+        return $stmts;
     }
 
     /**
