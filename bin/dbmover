@@ -46,15 +46,6 @@ EOT
 }
 
 foreach ($config as $dsn => $settings) {
-    if (isset($argv[2])) {
-        $settings['user'] = $argv[1];
-        $settings['pass'] = $argv[2];
-    } elseif (isset($argv[1])) {
-        $settings['pass'] = $argv[1];
-    }
-    if (!isset($settings['user'])) {
-        $settings['user'] = get_current_user();
-    }
     preg_match('@^(\w+):@', $dsn, $vendor);
     $vendor = ucfirst(strtolower($vendor[1]));
     putenv("DBMOVER_VENDOR=$vendor");
