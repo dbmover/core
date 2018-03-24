@@ -82,14 +82,17 @@ abstract class Plugin implements PluginInterface
      * (i.e. PlugA::operations > PlugB::operations > PlugB::deferred >
      * PlugA::deferred).
      *
-     * @param string $plugin Fully qualified classname of the plugin to spwan.
-     * @return void
+     * @param string $plugin Fully qualified classname of the plugin to spwan
+     * @param string $sql The SQL to be modified
+     * @return string Modified SQL
      */
-    public function spawn(string $plugin) : void
+    public function spawn(string $plugin, string $sql) : void
     {
         $plugin = new $plugin($this->loader);
+        $sql = $plugin($sql);
         $plugin->persist();
         unset($plugin);
+        return $sql;
     }
 }
 
