@@ -86,7 +86,7 @@ abstract class Plugin implements PluginInterface
      * @param string $sql The SQL to be modified
      * @return string Modified SQL
      */
-    public function spawn(string $plugin, string $sql) : void
+    public function spawn(string $plugin, string $sql) : string
     {
         $plugin = new $plugin($this->loader);
         $sql = $plugin($sql);
