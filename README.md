@@ -57,22 +57,6 @@ your system administrator. Currently supported vendors are `pgsql` and `mysql`;
 if you'd like to contribute another vendor, see the "contributing" section
 below.
 
-### `user` and `pass`
-Obviously... you can also pass these as arguments on the command line if you'd
-rather not have them in version control:
-
-```sh
-vendor/bin/dbmover myusername mysupersecretpass
-```
-
-Or, just exclude `dbmover.json` from your VCS. Passing on the command line is
-also useful if e.g. production and development credentials are different (a
-likely scenario). Credentials passed on the command line always override those
-specified in `dbmover.json`. If only _one_ credential is passed, it is assumed
-to be the _password_ and the username is taken from `dbmover.json` (if supplied,
-otherwise defaults to "current system username" which may or may not be what you
-want).
-
 ### `schema`
 This is an array of schema files, relative to the root of your repository.
 DbMover will process them in order. Note that the option to split your schema
@@ -397,4 +381,8 @@ means exhaustive yet, just the most-used options).
 Plugin packages sometimes also contain a TODO-list in their `README.md`. If your
 request is already listed there, there's no need to report it since it's already
 on the roadmap.
+
+## Debugging and development
+Run `dbmover` with the `--dry-run` flag to just assemble a list of operations to
+perform, without actually making any changes.
 
