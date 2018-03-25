@@ -1,15 +1,8 @@
-# Dbmover\Data
-DbMover plugin to execute data-altering statements (`INSERT`, `UPDATE`,
-`DELETE`) on migration.
-
-## Installation
-```sh
-$ composer require dbmover/data
-```
+# Data
+Plugin to execute data-altering statements (`INSERT`, `UPDATE`, `DELETE`) on
+migration.
 
 ## Usage
-For general DbMover usage, see `dbmover/core`.
-
 This plugin extracts and executes all data-altering statements from your schema
 file. Typically, this will be the last plugin you'll want to add.
 
@@ -27,6 +20,7 @@ INSERT INTO bar (id, bar) SELECT id, foo FROM foo WHERE id NOT IN
     (SELECT id FROM bar);
 ```
 
-## Contributing
-See `dbmover/core`.
+## Note
+This plugin is not part of any vendor-specific metapackage; you will always
+need to add it manually to your `dbmover.json` config.
 
