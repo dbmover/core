@@ -125,54 +125,6 @@ class Loader
     }
 
     /**
-     * Display success feedback.
-     *
-     * @param string $msg
-     */
-    public function success(string $msg)
-    {
-        if (!$this->silent) {
-            fwrite(STDOUT, "\033[0;32mOk:\033[0;39m $msg\n");
-        }
-    }
-
-    /**
-     * Display notice feedback.
-     *
-     * @param string $msg
-     */
-    public function notice(string $msg)
-    {
-        if (!$this->silent) {
-            fwrite(STDOUT, "\033[0;33mNotice:\033[0;39m $msg\n");
-        }
-    }
-
-    /**
-     * Display error feedback.
-     *
-     * @param string $msg
-     */
-    public function error(string $msg)
-    {
-        if (!$this->silent) {
-            fwrite(STDERR, "\033[0;031mError:\033[0;39m $msg\n");
-        }
-    }
-
-    /**
-     * Display informational feedback.
-     *
-     * @param string $msg
-     */
-    public function info(string $msg)
-    {
-        if (!$this->silent) {
-            fwrite(STDOUT, "\033[0;34mInfo:\033[0;39m $msg\n");
-        }
-    }
-
-    /**
      * Execute a batch of SQL statements and display feedback.
      *
      * @param string $description Description
@@ -360,6 +312,58 @@ class Loader
             }
         }
         return false;
+    }
+
+    /**
+     * Display success feedback.
+     *
+     * @param string $msg
+     * @return void
+     */
+    protected function success(string $msg) : void
+    {
+        if (!$this->silent) {
+            fwrite(STDOUT, "\033[0;32mOk:\033[0;39m $msg\n");
+        }
+    }
+
+    /**
+     * Display notice feedback.
+     *
+     * @param string $msg
+     * @return void
+     */
+    protected function notice(string $msg) : void
+    {
+        if (!$this->silent) {
+            fwrite(STDOUT, "\033[0;33mNotice:\033[0;39m $msg\n");
+        }
+    }
+
+    /**
+     * Display error feedback.
+     *
+     * @param string $msg
+     * @return void
+     */
+    protected function error(string $msg) : void
+    {
+        if (!$this->silent) {
+            fwrite(STDERR, "\033[0;031mError:\033[0;39m $msg\n");
+        }
+    }
+
+    /**
+     * Display informational feedback.
+     *
+     * @param string $msg
+     * @return void
+     */
+    protected function info(string $msg) : void
+    {
+        if (!$this->silent) {
+            fwrite(STDOUT, "\033[0;34mInfo:\033[0;39m $msg\n");
+        }
     }
 }
 
