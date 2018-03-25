@@ -12,7 +12,7 @@ use PDO;
 abstract class Tables extends Plugin
 {
     /** @var string */
-    const DESCRIPTION = 'Checking table definitions...';
+    const DESCRIPTION = 'Updating schemas...';
 
     /** @var string */
     const DEFERRED = 'Dropping deprecated tables...';
@@ -78,8 +78,6 @@ abstract class Tables extends Plugin
      */
     protected function checkTableStatus(string $table, string $sql) : void
     {
-        $tbl = new class($this->loader) extends Core\Plugin {};
-        $tbl->description = "Updating schema for $table...";
         $sql = preg_replace("@^\s+@ms", '', $sql);
         $requestedColumns = [];
         foreach (preg_split("@,\n@m", $sql) as $reqCol) {
@@ -113,7 +111,7 @@ abstract class Tables extends Plugin
         $currentColumns = [];
         foreach ($this->columns->fetchAll(PDO::FETCH_ASSOC) as $column) {
             if (!isset($requestedColumns[$column['column_name']])) {
-                $tbl->addOperation("ALTER TABLE $table DROP COLUMN {$column['column_name']};");
+                $this->addOperation("ALTER TABLE $table DROP COLUMN {$column['column_name']};");
             } else {
                 $column['is_nullable'] = $column['is_nullable'] == 'YES';
                 $column['column_type'] = strtoupper($column['column_type']);
@@ -122,14 +120,13 @@ abstract class Tables extends Plugin
         }
         foreach ($requestedColumns as $name => $col) {
             if (!isset($currentColumns[$name])) {
-                $tbl->addOperation("ALTER TABLE $table ADD COLUMN {$col['_definition']};");
+                $this->addOperation("ALTER TABLE $table ADD COLUMN {$col['_definition']};");
             } else {
                 foreach ($this->modifyColumn($table, $name, $col, $currentColumns[$name]) as $sql) {
-                    $tbl->addOperation($sql);
+                    $this->addOperation($sql);
                 }
             }
         }
-        $tbl->persist();
     }
 
     /**
