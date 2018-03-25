@@ -32,7 +32,7 @@ abstract class Tables extends Plugin
                 WHERE ((TABLE_CATALOG = ? AND TABLE_SCHEMA = 'public') OR TABLE_SCHEMA = ?)
                 AND TABLE_TYPE = 'BASE TABLE'
                 AND TABLE_NAME = ?");
-        while ($table = $this->extractOperations("@^CREATE TABLE\s*([^\s]+)\s*\((.*?)^\).*?;$@ms", $sql)) {
+        foreach ($this->extractOperations("@^CREATE TABLE\s*([^\s]+)\s*\((.*?)^\).*?;$@ms", $sql) as $table) {
             $tables[] = $table[1];
             // If no such table exists, create verbatim.
             $exists->execute([$this->loader->getDatabase(), $this->loader->getDatabase(), $table[1]]);
@@ -57,7 +57,7 @@ abstract class Tables extends Plugin
         }
 
         // Extract explicit ALTER TABLE statements.
-        while ($match = $this->extractOperations("@^ALTER TABLE.*?;$@ms", $sql)) {
+        foreach ($this->extractOperations("@^ALTER TABLE.*?;$@ms", $sql) as $match) {
             $this->addOperation($match[0]);
         }
         return $sql;
