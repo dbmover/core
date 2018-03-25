@@ -4,5 +4,13 @@ repo_url: https://github.com/dbmover/dbmover
 
 pages:
 - Home:
-    - 'Quickstart': 'index.md'
-
+    - 'General documentation': 'index.md'
+- Plugins:
+    - 'Conditionals': 'conditionals.md'
+    - 'Constraints': 'constraints.md'
+    - 'Data': 'data.md'
+    - 'Force named indexes': 'force-named-indexes.md'
+    - 'Indexes': 'indexes.md'
+    - 'Functions and procedures': 'procedures.md'
+    - 'Tables': 'tables.md'
+    - 'Views': 'views.md'
