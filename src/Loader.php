@@ -11,7 +11,7 @@ use Dbmover\Dbmover\Objects\Sql;
  * The main Loader class. This represents a migration for a single unique DSN
  * from the `dbmover.json` config file.
  */
-final class Loader
+class Loader
 {
     private $schemas = [];
     private $ignores = [];
