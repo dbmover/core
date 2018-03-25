@@ -1,4 +1,4 @@
-# Dbmover\Procedures
+# Procedures
 DbMover plugin to (re)create procedures
 
 ## Installation
