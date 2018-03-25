@@ -3,11 +3,11 @@ PHP-based database versioning tool, core package.
 
 ## Installation
 The recommended way of installing DbMover is via
-[Composer](https://getcomposer.org). Seriously - as of version 0.6 we use a
-plugin-based architecture. Installing manually will land you in Dependency Hell.
+[Composer](https://getcomposer.org). Currently DbMover supports PostgreSQL and
+MySQL via `dbmover/pgsql` and `dbmover/mysql` respectively. E.g.:
 
 ```sh
-composer require dbmover/core dbmover/PLUGIN [...]
+composer require dbmover/pgsql
 ```
 
 ## Design goals
@@ -65,17 +65,16 @@ DbMover cats them all together before starting work.
 
 ### `plugins`
 An array of plugins DbMover will load to perform the migration. By using
-plugins, we make DbMover _very_ configurable to your exact needs. Each plugin is
-denoted by either its Composer package name (e.g. "some/plugin") or a classname
-autoloadable by Composer (e.g. "My\\Custom\\Plugin"). More on plugins below.
+plugins, we make DbMover _very_ configurable to your exact needs. To just use
+sane defaults, simply specify the database vendor specific plugin (e.g.
+`Dbmover\Pgsql\Plugin`). More on plugins below.
 
 ## Running DbMover
-Simply execute `vendor/bin/dbmover`, optionally supplying username/password as
-parameters (see above). For each database specified, it will perform the
-requested operations against your defined schemas. If you've been filling in
-your `dbmover.json` following the above tutorial and run it now... nothing
-happens. This is because all _actual_ functionality is in _plugins_. You need to
-specify them in your `dbmover.json` config.
+Simply execute `vendor/bin/dbmover`. For each database specified, it will
+perform the requested operations against your defined schemas. If you've been
+filling in your `dbmover.json` following the above tutorial and run it now...
+nothing happens. This is because all _actual_ functionality is in _plugins_. You
+need to specify them in your `dbmover.json` config.
 
 ## Plugins
 As of version 0.6, DbMover uses plugins to specify actions. It is important to
@@ -109,7 +108,7 @@ composer require dbmover/mysql
 ```json
 {
     ...
-    plugins: ["dbmover/mysql"]
+    plugins: ["Dbmover\\Mysql\\Plugin"]
 }
 ```
 
