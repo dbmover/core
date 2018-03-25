@@ -1,17 +1,7 @@
 # Dbmover\Views
-This Dbmover plugin drops all existing views prior to migration, and recreates
-the requested views afterwards.
+This plugin drops all existing views prior to migration, and recreates the
+requested views afterwards.
 
-## Installation
-```sh
-$ composer require dbmover/views
-```
-
-    Note: this plugin is already part of the vendor-specific meta-plugins.
-
-## Usage
-For general DbMover usage, see `dbmover/core`.
-
-## Contributing
-See `dbmover/core`.
+Vendors supporting more complex views (e.g. materialized views in PostgreSQL)
+should extend this plugin and handle accordingly.
 
