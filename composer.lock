@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "abdbf891db6a05cd02e611a024d920ce",
-    "content-hash": "8a88a8fecf8d2a5624252461c9c774fb",
+    "hash": "cb26e896b32e3569edfa68e05737fa37",
+    "content-hash": "324a4331b1545b03d5447c21ed07bfad",
     "packages": [
         {
             "name": "monomelodies/kingconf",
@@ -119,16 +119,16 @@
     "packages-dev": [
         {
             "name": "gentry/gentry",
-            "version": "0.13.0",
+            "version": "0.13.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/gentry-php/gentry.git",
-                "reference": "d7ac67194ae38330b66d99ebcabca6fc4b372683"
+                "reference": "9b7f7869754a1b3ae0bd6fb0b5b706b0e62a81a4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/gentry-php/gentry/zipball/d7ac67194ae38330b66d99ebcabca6fc4b372683",
-                "reference": "d7ac67194ae38330b66d99ebcabca6fc4b372683",
+                "url": "https://api.github.com/repos/gentry-php/gentry/zipball/9b7f7869754a1b3ae0bd6fb0b5b706b0e62a81a4",
+                "reference": "9b7f7869754a1b3ae0bd6fb0b5b706b0e62a81a4",
                 "shasum": ""
             },
             "require": {
@@ -162,7 +162,7 @@
                 }
             ],
             "description": "PHP unit test generation tools",
-            "time": "2018-03-24 06:57:23"
+            "time": "2018-03-25 07:42:50"
         },
         {
             "name": "gentry/toast",
@@ -491,6 +491,8 @@
     "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
-    "platform": [],
+    "platform": {
+        "php": ">=7.2"
+    },
     "platform-dev": []
 }
