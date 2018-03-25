@@ -24,6 +24,7 @@ class Loader
     protected $plugins = [];
     protected $user;
     protected $settings;
+    protected $silent = false;
 
     /**
      * Constructor.
