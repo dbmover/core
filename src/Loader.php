@@ -13,18 +13,17 @@ use Dbmover\Dbmover\Objects\Sql;
  */
 class Loader
 {
-    private $schemas = [];
-    private $ignores = [];
-    private $errors = [];
-    private $dsn;
-    private $pdo;
-    private $operations = [];
-    private $vendor;
-    private $database;
-    private $plugins = [];
-    private $user;
-    private $description = 'DbMoving';
-    private $settings;
+    protected $schemas = [];
+    protected $ignores = [];
+    protected $errors = [];
+    protected $dsn;
+    protected $pdo;
+    protected $operations = [];
+    protected $vendor;
+    protected $database;
+    protected $plugins = [];
+    protected $user;
+    protected $settings;
 
     /**
      * Constructor.
@@ -258,16 +257,6 @@ class Loader
     public function getUser() : string
     {
         return $this->user;
-    }
-
-    /**
-     * Set the description to show when the current batch runs.
-     *
-     * @param string $description
-     */
-    public function setDescription(string $description)
-    {
-        $this->description = $description;
     }
 
     /**
