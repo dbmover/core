@@ -216,6 +216,44 @@ class Loader
     }
 
     /**
+     * Adds a batch of operations to the list.
+     *
+     * @param string $description Description.
+     * @param array $sqls Array of SQL statements for the operation.
+     * @return void
+     */
+    public function addOperation(string $description, array $sqls) : void
+    {
+        $this->operations[] = [$description, $sqls];
+    }
+
+    /**
+     * Get the current list op operations (for debugging purposes).
+     *
+     * @return array
+     */
+    public function getOperations() : array
+    {
+        return $this->operations;
+    }
+
+    /**
+     * Determine whether an object should be ignored as per config.
+     *
+     * @param string $name The name of the object to test.
+     * @return bool
+     */
+    public function shouldBeIgnored($name) : bool
+    {
+        foreach ($this->ignores as $regex) {
+            if (preg_match($regex, $name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Add schema data from an SQL file.
      *
      * @param string $schema The filename containing the schema.
@@ -233,34 +271,6 @@ class Loader
         }
         $this->schemas[] = file_get_contents($work);
         $this->success("Loaded $schema.");
-    }
-
-    /**
-     * Adds a batch of operations to the list.
-     *
-     * @param string $description Description.
-     * @param array $sqls Array of SQL statements for the operation.
-     * @return void
-     */
-    public function addOperation(string $description, array $sqls) : void
-    {
-        $this->operations[] = [$description, $sqls];
-    }
-
-    /**
-     * Determine whether an object should be ignored as per config.
-     *
-     * @param string $name The name of the object to test.
-     * @return bool
-     */
-    public function shouldBeIgnored($name) : bool
-    {
-        foreach ($this->ignores as $regex) {
-            if (preg_match($regex, $name)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
