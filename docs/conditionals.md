@@ -43,3 +43,7 @@ END IF;
 CREATE TABLE bar (...);
 ```
 
+## Note
+This plugin is not part of any vendor-specific metapackage; you will always
+need to add it manually to your `dbmover.json` config.
+
