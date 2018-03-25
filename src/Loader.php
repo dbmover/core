@@ -181,7 +181,8 @@ class Loader
      *
      * Examples: `foo/bar`, `Foo\\Bar{\\Plugin}`, `Foo\\Bar\\CustomPlugin`
      *
-     * @param string ...$plugins
+     * @param string ...$plugins Name(s) of the plugin(s) to load.
+     * @return void
      * @throws Dbmover\Core\PluginUnavailableException
      */
     public function loadPlugins(string ...$plugins) : void
@@ -218,8 +219,9 @@ class Loader
      * Add schema data from an SQL file.
      *
      * @param string $schema The filename containing the schema.
+     * @return void
      */
-    public function addSchema(string $schema)
+    public function addSchema(string $schema) : void
     {
         $work = $schema;
         if ($work{0} != '/') {
@@ -238,8 +240,9 @@ class Loader
      *
      * @param string $description Description.
      * @param array $sqls Array of SQL statements for the operation.
+     * @return void
      */
-    public function addOperation(string $description, array $sqls)
+    public function addOperation(string $description, array $sqls) : void
     {
         $this->operations[] = [$description, $sqls];
     }
@@ -260,6 +263,12 @@ class Loader
         return false;
     }
 
+    /**
+     * Add a plugin instance.
+     *
+     * @param Dbmover\Core\PluginInterface $plugin
+     * @return void
+     */
     protected function addPlugin(PluginInterface $plugin) : void
     {
         $this->plugins[] = $plugin;
