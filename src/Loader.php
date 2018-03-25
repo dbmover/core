@@ -49,15 +49,16 @@ class Loader
         $pass = $settings['pass'] ?? null;
         $options = $settings['options'] ?? [];
         $options[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
+        if (isset($options['ignore']) && is_array($options['ignore'])) {
+            $this->ignores = $options['ignore'];
+            unset($options['ignore']);
+        }
         $this->info("Starting migration for \033[0;35m{$this->database}\033[0;0m...");
         try {
             $this->pdo = new PDO($dsn, $user, $pass, $options);
         } catch (PDOException $e) {
             $this->notice(" `$dsn` for `$user` with password `$pass` is unavailable on this machine, skipping.");
             return;
-        }
-        if (isset($options['ignore']) && is_array($options['ignore'])) {
-            $this->ignores = $options['ignore'];
         }
         $this->user = $user;
         $this->info("Loading plugins...");
