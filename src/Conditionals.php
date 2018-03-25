@@ -18,7 +18,6 @@ class Conditionals extends Plugin
     public function __invoke(string $sql) : string
     {
         foreach ($this->extractOperations('@^IF.*?^END IF;$@ms', $sql) as $if) {
-            $tmp = 'tmp_'.md5(microtime(true));
             $code = $this->wrap($if[0]);
             $this->defer($code);
             $this->addOperation($code);
