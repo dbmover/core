@@ -1,8 +1,8 @@
-# Dbmover\ForceNamedIndexes
+# ForceNamedIndexes
 Plugin for DbMover that rewrites SQL to always have named indexes.
 
 Some vendors like MySQL already require named indexes (at least, when defined
-using `CREATE INDEX`), with others (like PostgreSQL) the names are optional.
+using `CREATE INDEX`), with for others (like PostgreSQL) the names are optional.
 
 Using named indexes helps DbMover compare existing indexes and aids in avoiding
 unnessecary index recration and thus longer migrations.
@@ -10,15 +10,12 @@ unnessecary index recration and thus longer migrations.
 Indexes already explicitly named in your schemas remain untouched, so you'll
 only need this plugin if you're lazy ;)
 
-## Installation
-```sh
-composer require dbmover/force-named-indexes
-```
-
 ## Usage
-For general DbMover usage, see `dbmover/core`.
-
-You'll typically want to load this plugin before the `VENDOR-indexes` plugin.
+You'll typically want to load this plugin before the (vendor's) `Indexes`
+plugin. Note that e.g. PostgreSQL forks its `Indexes` from `Constraints`. It's
+safe to add this plugin _before_ the vendor-specific meta plugin, since it only
+rewrites your SQL where necessary; the actual index _creation_ is left to the
+`Indexes` plugin.
 
 ## Workings
 The plugin rewrites your SQL so each unnamed index will get an explicit name of
@@ -36,13 +33,10 @@ possible in e.g. PostgreSQL, it also strips all non-word characters
   is to explicitly name these indexes (e.g. `users_male` and `users_female` for
   indexes on `users(gender)` where `gender = 'm'` and `gender='f'`).
 
-Again, it's always better to explicitly name indexes just in case. But
+Again, it's always better to explicitly name indexes just in case. But good
 programmers are lazy...
 
-Note that you can use this plugin in combination with `dbmover/mysql` to avoid
-having to explicitly name all your indexes - it _does_ produce a lot of
-boilerplate.
-
-## Contributing
-See `dbmover/core`.
+## Note
+This plugin is not part of any vendor-specific metapackage; you will always
+need to add it manually to your `dbmover.json` config.
 
