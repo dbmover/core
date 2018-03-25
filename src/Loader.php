@@ -125,55 +125,6 @@ class Loader
     }
 
     /**
-     * Execute a batch of SQL statements and display feedback.
-     *
-     * @param string $description Description
-     * @param array $sqls Array of SQL statements
-     * @return array Array of SQL statements
-     */
-    public function sql(string $description, array $sqls) : array
-    {
-        global $argv;
-        $description = trim($description);
-        if (strlen($description) > 94) {
-            $description = substr(preg_replace("@\s+@m", ' ', $description), 0, 94)." \033[0;33m[...]";
-        }
-        if (!$this->silent) {
-            fwrite(STDOUT, "\033[0;36mSQL:\033[0;39m $description \033[0;37m  0%");
-        }
-        $error = false;
-        $orig = count($sqls);
-        $done = 0;
-        $stmts = [];
-        while ($sql = array_shift($sqls)) {
-            $stmts[] = trim($sql);
-            if (!(isset($argv[1]) && $argv[1] == '--dry-run')) {
-                try {
-                    $this->pdo->exec(trim($sql));
-                } catch (PDOException $e) {
-                    $this->errors[trim($sql)] = $e->getMessage();
-                    $error = true;
-                }
-            }
-            $done++;
-            if (!$this->silent) {
-                fwrite(STDOUT, sprintf(
-                    "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;D%s%%",
-                    str_pad(round($done / $orig * 100), 4, ' ', STR_PAD_LEFT)
-                ));
-            }
-        }
-        if (!$this->silent) {
-            if ($error) {
-                fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;31m[Error]\033\n");
-            } else {
-                fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;32m[Ok]\033\n");
-            }
-        }
-        return $stmts;
-    }
-
-    /**
      * Expose the current PDO objecty.
      *
      * @return PDO
@@ -312,6 +263,55 @@ class Loader
             }
         }
         return false;
+    }
+
+    /**
+     * Execute a batch of SQL statements and display feedback.
+     *
+     * @param string $description Description
+     * @param array $sqls Array of SQL statements
+     * @return array Array of SQL statements
+     */
+    protected function sql(string $description, array $sqls) : array
+    {
+        global $argv;
+        $description = trim($description);
+        if (strlen($description) > 94) {
+            $description = substr(preg_replace("@\s+@m", ' ', $description), 0, 94)." \033[0;33m[...]";
+        }
+        if (!$this->silent) {
+            fwrite(STDOUT, "\033[0;36mSQL:\033[0;39m $description \033[0;37m  0%");
+        }
+        $error = false;
+        $orig = count($sqls);
+        $done = 0;
+        $stmts = [];
+        while ($sql = array_shift($sqls)) {
+            $stmts[] = trim($sql);
+            if (!(isset($argv[1]) && $argv[1] == '--dry-run')) {
+                try {
+                    $this->pdo->exec(trim($sql));
+                } catch (PDOException $e) {
+                    $this->errors[trim($sql)] = $e->getMessage();
+                    $error = true;
+                }
+            }
+            $done++;
+            if (!$this->silent) {
+                fwrite(STDOUT, sprintf(
+                    "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;D%s%%",
+                    str_pad(round($done / $orig * 100), 4, ' ', STR_PAD_LEFT)
+                ));
+            }
+        }
+        if (!$this->silent) {
+            if ($error) {
+                fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;31m[Error]\033\n");
+            } else {
+                fwrite(STDOUT, "\033[0;D\033[0;D\033[0;D\033[0;D\033[0;32m[Ok]\033\n");
+            }
+        }
+        return $stmts;
     }
 
     /**
