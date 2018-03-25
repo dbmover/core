@@ -28,7 +28,7 @@ abstract class Indexes extends Plugin
      */
     public function __invoke(string $sql) : string
     {
-        while ($index = $this->extractOperations(static::REGEX, $sql)) {
+        foreach ($this->extractOperations(static::REGEX, $sql) as $index) {
             $name = strlen($index[2])
                 ? $index[2]
                 : preg_replace("@[\W_]+@", '_', "{$index[3]}_{$index[5]}_idx");
@@ -37,13 +37,13 @@ abstract class Indexes extends Plugin
             $index[4] = trim($index[4]);
             $this->requestedIndexes[$name] = $index;
         }
-        while ($index = $this->extractOperations("@^ALTER TABLE\s+([^\s]+?)\s+ADD PRIMARY KEY\((.*?)\)@", $sql)) {
+        foreach ($this->extractOperations("@^ALTER TABLE\s+([^\s]+?)\s+ADD PRIMARY KEY\((.*?)\)@", $sql) as $index) {
             $index[5] = $index[4];
             $name = "{$index[1]}_PRIMARY";
             $index[4] = $name;
             $this->requestedIndexes[$name] = $index;
         }
-        while ($pktable = $this->findOperations("@^CREATE TABLE\s+([^\s]+?)\s+\($(.*?)^\)@ms", $sql)) {
+        foreach ($this->findOperations("@^CREATE TABLE\s+([^\s]+?)\s+\($(.*?)^\)@ms", $sql) as $pktable) {
             if (preg_match("@^\s+([^\s]+).*?PRIMARY KEY@m", $pktable[0], $pk)
                 || preg_match("@^\s+PRIMARY KEY\((.*?)\)@m", $pktable[0], $pk)
             ) {
