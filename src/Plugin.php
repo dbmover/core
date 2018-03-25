@@ -78,7 +78,7 @@ abstract class Plugin implements PluginInterface
     public function persist() : void
     {
         if ($this->statements) {
-            $this->loader->addOperation(self::DESCRIPTION, $this->statements);
+            $this->loader->addOperation(static::DESCRIPTION, $this->statements);
         }
     }
 
@@ -90,7 +90,7 @@ abstract class Plugin implements PluginInterface
     public function __destruct()
     {
         if ($this->deferredStatements) {
-            $this->loader->addOperation(self::DEFERRED, $this->deferredStatements);
+            $this->loader->addOperation(static::DEFERRED, $this->deferredStatements);
         }
     }
 
