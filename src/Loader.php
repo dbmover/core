@@ -184,7 +184,7 @@ class Loader
      * @param string ...$plugins
      * @throws Dbmover\Core\PluginUnavailableException
      */
-    public function loadPlugins(string ...$plugins)
+    public function loadPlugins(string ...$plugins) : void
     {
         foreach ($plugins as $plugin) {
             if (file_exists(getcwd()."/vendor/$plugin/src/Plugin.php")) {
@@ -212,11 +212,6 @@ class Loader
             }
             $this->success("Loaded $plugin.");
         }
-    }
-
-    public function addPlugin(PluginInterface $plugin)
-    {
-        $this->plugins[] = $plugin;
     }
 
     /**
@@ -263,6 +258,11 @@ class Loader
             }
         }
         return false;
+    }
+
+    protected function addPlugin(PluginInterface $plugin) : void
+    {
+        $this->plugins[] = $plugin;
     }
 
     /**
