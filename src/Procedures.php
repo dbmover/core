@@ -27,7 +27,7 @@ class Procedures extends Plugin
     public function __invoke(string $sql) : string
     {
         $this->dropExistingProcedures();
-        while ($procedure = $this->extractOperations(static::REGEX, $sql)) {
+        foreach ($this->extractOperations(static::REGEX, $sql) as $procedure) {
             $this->defer($procedure[0]);
         }
         return $sql;
