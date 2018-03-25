@@ -125,7 +125,7 @@ abstract class Plugin implements PluginInterface
 
     protected function extractOperations(string $regex, string &$sql) : Generator
     {
-        while ($match = $this->findOperations($regex, $sql)) {
+        foreach ($this->findOperations($regex, $sql) as $match) {
             $sql = str_replace($match[0], '', $sql);
             yield $match;
         }
