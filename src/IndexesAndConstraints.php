@@ -10,7 +10,8 @@ namespace Dbmover\Core;
 use PDO;
 
 /**
- * Migrate all indexes and constraints.
+ * Migrate all indexes and constraints. Vendor authors must extend this plugin
+ * and provide their vendor-specific methods.
  */
 abstract class IndexesAndConstraints extends Plugin
 {
@@ -21,10 +22,10 @@ abstract class IndexesAndConstraints extends Plugin
     const DEFAULT_INDEX_TYPE = '';
 
     /** @var string */
-    const DESCRIPTION = 'Checking index (re)creation...';
+    const DESCRIPTION = 'Dropping constraints and deprecated indexes...';
 
     /** @var string */
-    const DEFERRED = 'Recreating requested indexes...';
+    const DEFERRED = 'Recreating constraints and adding new indexes...';
 
     /** @var array */
     protected $requestedIndexes = [];
@@ -116,5 +117,27 @@ abstract class IndexesAndConstraints extends Plugin
 
     /** @return array */
     protected abstract function existingIndexes() : array;
+
+    /**
+     * @param string $index
+     * @param string $table
+     * @return string
+     */
+    protected abstract function dropIndex(string $index, string $table) : string;
+
+    /**
+     * @param string $index
+     * @param string $table
+     * @return string
+     */
+    protected abstract function dropPrimaryKey(string $index, string $table) : string;
+
+    /**
+     * @param string $table
+     * @param string $constraint
+     * @param string $type
+     * @return void
+     */
+    protected abstract function dropConstraint(string $table, string $constraint, string $type) : void;
 }
 
