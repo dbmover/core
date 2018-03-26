@@ -7,10 +7,9 @@ pages:
     - 'General documentation': 'index.md'
 - Plugins:
     - 'Conditionals': 'conditionals.md'
-    - 'Constraints': 'constraints.md'
     - 'Data': 'data.md'
     - 'Force named indexes': 'force-named-indexes.md'
-    - 'Indexes': 'indexes.md'
+    - 'Indexes and constraints': 'indexes-and-constraints.md'
     - 'Functions and procedures': 'procedures.md'
     - 'Tables': 'tables.md'
     - 'Views': 'views.md'
