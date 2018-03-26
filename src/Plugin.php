@@ -79,6 +79,7 @@ abstract class Plugin implements PluginInterface
     {
         if ($this->statements) {
             $this->loader->addOperation(static::DESCRIPTION, $this->statements);
+            $this->statements = [];
         }
     }
 
@@ -91,25 +92,8 @@ abstract class Plugin implements PluginInterface
     {
         if ($this->deferredStatements) {
             $this->loader->addOperation(static::DEFERRED, $this->deferredStatements);
+            $this->deferredStatements = [];
         }
-    }
-
-    /**
-     * "Spawns" a child plugin. Useful for when one plugin should nest another
-     * (i.e. PlugA::operations > PlugB::operations > PlugB::deferred >
-     * PlugA::deferred).
-     *
-     * @param string $plugin Fully qualified classname of the plugin to spwan
-     * @param string $sql The SQL to be modified
-     * @return string Modified SQL
-     */
-    public function spawn(string $plugin, string $sql) : string
-    {
-        $plugin = new $plugin($this->loader);
-        $sql = $plugin($sql);
-        $plugin->persist();
-        unset($plugin);
-        return $sql;
     }
 
     protected function findOperations(string $regex, string $sql) : Generator
