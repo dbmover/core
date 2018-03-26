@@ -24,7 +24,7 @@ abstract class Indexes extends Plugin
     const DESCRIPTION = 'Checking index (re)creation...';
 
     /** @var string */
-    const DEFERRED = 'Dropping deprecated indexes...';
+    const DEFERRED = 'Recreating requested indexes...';
 
     /** @var array */
     protected $requestedIndexes = [];
