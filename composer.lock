@@ -119,16 +119,16 @@
     "packages-dev": [
         {
             "name": "gentry/gentry",
-            "version": "0.13.1",
+            "version": "0.13.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/gentry-php/gentry.git",
-                "reference": "9b7f7869754a1b3ae0bd6fb0b5b706b0e62a81a4"
+                "reference": "56e75e992cad571665602837fdfdf492e06e3a04"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/gentry-php/gentry/zipball/9b7f7869754a1b3ae0bd6fb0b5b706b0e62a81a4",
-                "reference": "9b7f7869754a1b3ae0bd6fb0b5b706b0e62a81a4",
+                "url": "https://api.github.com/repos/gentry-php/gentry/zipball/56e75e992cad571665602837fdfdf492e06e3a04",
+                "reference": "56e75e992cad571665602837fdfdf492e06e3a04",
                 "shasum": ""
             },
             "require": {
@@ -162,7 +162,7 @@
                 }
             ],
             "description": "PHP unit test generation tools",
-            "time": "2018-03-25 07:42:50"
+            "time": "2018-03-25 09:34:51"
         },
         {
             "name": "gentry/toast",
