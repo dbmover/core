@@ -52,7 +52,7 @@ abstract class Tables extends Plugin
         $exists->execute([$this->loader->getDatabase(), $this->loader->getDatabase()]);
         while (false !== ($table = $exists->fetchColumn())) {
             if (!in_array($table, $tables)) {
-                $this->addOperation("DROP TABLE $table CASCADE;");
+                $this->addOperation("DROP TABLE IF EXISTS $table CASCADE;");
             }
         }
 
