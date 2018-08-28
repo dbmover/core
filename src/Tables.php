@@ -52,7 +52,7 @@ abstract class Tables extends Plugin
         $exists->execute([$this->loader->getDatabase(), $this->loader->getDatabase()]);
         while (false !== ($table = $exists->fetchColumn())) {
             if (!in_array($table, $tables)) {
-                $this->defer("DROP TABLE $table;");
+                $this->addOperation("DROP TABLE $table;");
             }
         }
 
