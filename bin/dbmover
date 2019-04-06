@@ -50,7 +50,7 @@ foreach ($config as $dsn => $settings) {
     $vendor = ucfirst(strtolower($vendor[1]));
     putenv("DBMOVER_VENDOR=$vendor");
     $settings[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
-    $mover = new Loader($dsn, $settings);
+    $mover = new Loader($dsn, $settings, false, isset($argv[1]) && $argv[1] == '-v' ? true : false);
     unset($mover);
 }
 
