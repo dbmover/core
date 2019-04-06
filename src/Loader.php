@@ -34,8 +34,10 @@ class Loader
      * @param array $settings Hash of settings read from `dbmover.json`. See
      *  README.md for further information on possible settings.
      * @param bool $silent If true, do not output anything. Defaults to false.
+     * @param bool $verbose Be verbose in output, for checking statements.
+     *  Defaults to false.
      */
-    public function __construct(string $dsn, array $settings = [], bool $silent = false)
+    public function __construct(string $dsn, array $settings = [], bool $silent = false, bool $verbose = false)
     {
         global $argv;
         $this->dsn = $dsn;
