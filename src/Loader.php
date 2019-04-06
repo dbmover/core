@@ -81,6 +81,8 @@ class Loader
         }
         $this->info("Applying plugins to schemas...");
         $sql = implode("\n", $this->schemas);
+        // Strip comments
+        $sql = preg_replace("@--.*?$@m", '', $sql);
         $this->errors = [];
         foreach ($this->plugins as $plugin) {
             $sql = $plugin($sql);
@@ -93,9 +95,7 @@ class Loader
         foreach ($this->operations as $operation) {
             $stmts = array_merge($stmts, $this->sql(...$operation));
         }
-        // Strip remaining comments
-        $sql = preg_replace("@^--.*?$@m", '', $sql);
-        // and superfluous whitespace
+        // Strip superfluous whitespace
         $sql = preg_replace("@^\n{2,}@m", "\n", $sql);
 
         $left = trim($sql);
