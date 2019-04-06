@@ -107,9 +107,8 @@ abstract class Tables extends Plugin
             }
             $requestedColumns[$name]['column_type'] = trim($reqCol);
         }
-        $this->columns->execute([$this->loader->getDatabase(), $table]);
         $currentColumns = [];
-        foreach ($this->columns->fetchAll(PDO::FETCH_ASSOC) as $column) {
+        foreach ($this->getColumns($table) as $column) {
             if (!isset($requestedColumns[$column['column_name']])) {
                 $this->addOperation("ALTER TABLE $table DROP COLUMN {$column['column_name']};");
             } else {
@@ -127,6 +126,12 @@ abstract class Tables extends Plugin
                 }
             }
         }
+    }
+
+    public function getColumns(string $table) : array
+    {
+        $this->columns->execute([$this->loader->getDatabase(), $table]);
+        return $this->columns->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
