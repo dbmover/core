@@ -170,6 +170,18 @@ class Loader
     }
 
     /**
+     * Set the dry mode or not. Dry mode means we only gather the requested
+     * operations, we don't actually perform them.
+     *
+     * @param bool $dry Defaults to false.
+     * @return void
+     */
+    public function setDryMode(bool $dry = false) : void
+    {
+        $this->dry = $dry;
+    }
+
+    /**
      * Expose the current PDO objecty.
      *
      * @return PDO
