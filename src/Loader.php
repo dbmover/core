@@ -13,18 +13,32 @@ use Dbmover\Dbmover\Objects\Sql;
  */
 class Loader
 {
+    /** @var array */
     protected $schemas = [];
+    /** @var array */
     protected $ignores = [];
+    /** @var array */
     protected $errors = [];
+    /** @var string */
     protected $dsn;
+    /** @var PDO */
     protected $pdo;
+    /** @var array */
     protected $operations = [];
+    /** @var string */
     protected $vendor;
+    /** @var string */
     protected $database;
+    /** @var array */
     protected $plugins = [];
+    /** @var string */
     protected $user;
+    /** @var array */
     protected $settings;
+    /** @var bool */
     protected $silent = false;
+    /** @var bool */
+    protected $dry = false;
 
     /**
      * Constructor.
@@ -148,7 +162,7 @@ class Loader
         if (!$this->silent) {
             fwrite(STDOUT, "\n");
         }
-        if (isset($argv[1]) && $argv[1] == '--dry-run') {
+        if ($this->dry) {
             foreach ($stmts as $stmt) {
                 fwrite(STDOUT, trim($stmt)."\n");
             }
@@ -338,7 +352,7 @@ class Loader
         $stmts = [];
         while ($sql = array_shift($sqls)) {
             $stmts[] = trim($sql);
-            if (!(isset($argv[1]) && $argv[1] == '--dry-run')) {
+            if (!$this->dry) {
                 try {
                     $this->pdo->exec(trim($sql));
                 } catch (PDOException $e) {
