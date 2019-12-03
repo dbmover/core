@@ -130,9 +130,9 @@ class Loader
      * Cleanup existing statements.
      *
      * @param string $sql
-     * @return void
+     * @return array An array of any non-executed SQL statement.
      */
-    public function cleanup(string $sql) : void
+    public function cleanup(string $sql) : array
     {
         $stmts = [];
         foreach ($this->operations as $operation) {
@@ -162,11 +162,7 @@ class Loader
         if (!$this->silent) {
             fwrite(STDOUT, "\n");
         }
-        if ($this->dry) {
-            foreach ($stmts as $stmt) {
-                fwrite(STDOUT, trim($stmt)."\n");
-            }
-        }
+        return $stmts;
     }
 
     /**
