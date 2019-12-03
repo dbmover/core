@@ -51,6 +51,8 @@ foreach ($config as $dsn => $settings) {
     putenv("DBMOVER_VENDOR=$vendor");
     $settings[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
     $mover = new Loader($dsn, $settings, false, isset($argv[1]) && $argv[1] == '-v' ? true : false);
-    unset($mover);
+    $sql = $mover->applyPlugins();
+    $mover->applyDeferred();
+    $mover->cleanup($sql);
 }
 
