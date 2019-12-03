@@ -79,6 +79,15 @@ class Loader
         foreach ($settings['schema'] as $schema) {
             $this->addSchema($schema);
         }
+    }
+
+    /**
+     * Apply plugin operations to SQL.
+     *
+     * @return string Update SQL.
+     */
+    public function applyPlugins() : string
+    {
         $this->info("Applying plugins to schemas...");
         $sql = implode("\n", $this->schemas);
         // Strip comments
@@ -88,9 +97,29 @@ class Loader
             $sql = $plugin($sql);
             $plugin->persist();
         }
+        return $sql;
+    }
+
+    /**
+     * Apply deferred plugin operations.
+     *
+     * @return void
+     */
+    public function applyDeferred() : void
+    {
         while ($plugin = array_shift($this->plugins)) {
             unset($plugin);
         }
+    }
+
+    /**
+     * Cleanup existing statements.
+     *
+     * @param string $sql
+     * @return void
+     */
+    public function cleanup(string $sql) : void
+    {
         $stmts = [];
         foreach ($this->operations as $operation) {
             $stmts = array_merge($stmts, $this->sql(...$operation));
