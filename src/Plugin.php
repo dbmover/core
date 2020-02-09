@@ -12,9 +12,11 @@ abstract class Plugin implements PluginInterface
 {
     /** @var Dbmover\Core\Loader */
     protected $loader;
-    /** @var array */
+
+    /** @var string[] */
     protected $statements = [];
-    /** @var array */
+
+    /** @var string[] */
     protected $deferredStatements = [];
 
     /**
