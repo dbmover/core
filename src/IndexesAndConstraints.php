@@ -27,7 +27,7 @@ abstract class IndexesAndConstraints extends Plugin
     /** @var string */
     const DEFERRED = 'Recreating constraints and adding new indexes...';
 
-    /** @var array */
+    /** @var array[] */
     protected $requestedIndexes = [];
 
     /**
