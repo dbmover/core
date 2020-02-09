@@ -327,7 +327,7 @@ class Loader
     public function addSchema(string $schema) : void
     {
         $work = $schema;
-        if ($work{0} != '/') {
+        if (substr($work, 0, 1) != '/') {
             $work = getcwd()."/$work";
         }
         if (!file_exists($work)) {
