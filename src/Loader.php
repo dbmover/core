@@ -13,30 +13,42 @@ use Dbmover\Dbmover\Objects\Sql;
  */
 class Loader
 {
-    /** @var array */
+    /** @var string[] */
     protected $schemas = [];
-    /** @var array */
+
+    /** @var string[] */
     protected $ignores = [];
-    /** @var array */
+
+    /** @var string[] */
     protected $errors = [];
+
     /** @var string */
     protected $dsn;
+
     /** @var PDO */
     protected $pdo;
-    /** @var array */
+
+    /** @var string[] */
     protected $operations = [];
+
     /** @var string */
     protected $vendor;
+
     /** @var string */
     protected $database;
-    /** @var array */
+
+    /** @var string[] */
     protected $plugins = [];
+
     /** @var string */
     protected $user;
-    /** @var array */
+
+    /** @var mixed[] */
     protected $settings;
+
     /** @var bool */
     protected $silent = false;
+
     /** @var bool */
     protected $dry = false;
 
