@@ -387,6 +387,10 @@ Plugin packages sometimes also contain a TODO-list in their `README.md`. If your
 request is already listed there, there's no need to report it since it's already
 on the roadmap.
 
+To run unit tests, execute `vendor/bin/toast`. The tests require an empty MySQL
+database with the name `dbmover_test`, user `dbmover_test` and password
+`moveit`.
+
 ## Debugging and development
 Run `dbmover` with the `--dry-run` flag to just assemble a list of operations to
 perform, without actually making any changes.
