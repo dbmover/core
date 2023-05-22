@@ -20,7 +20,6 @@ class Conditionals extends Plugin
         foreach ($this->extractOperations('@^IF.*?^END IF;$@ms', $sql) as $if) {
             $code = $this->wrap($if[0]);
             $this->defer($code);
-            $this->addOperation($code);
         }
         return $sql;
     }

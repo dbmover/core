@@ -27,7 +27,7 @@ abstract class IndexesAndConstraints extends Plugin
     /** @var string */
     const DEFERRED = 'Recreating constraints and adding new indexes...';
 
-    /** @var array */
+    /** @var array[] */
     protected $requestedIndexes = [];
 
     /**
@@ -36,17 +36,6 @@ abstract class IndexesAndConstraints extends Plugin
      */
     public function __invoke(string $sql) : string
     {
-        $stmt = $this->loader->getPdo()->prepare(
-            "SELECT TABLE_NAME tbl, CONSTRAINT_NAME constr, CONSTRAINT_TYPE ctype
-                FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
-                WHERE (CONSTRAINT_CATALOG = ? AND CONSTRAINT_SCHEMA = 'public') OR CONSTRAINT_SCHEMA = ?"
-        );
-        $stmt->execute([$this->loader->getDatabase(), $this->loader->getDatabase()]);
-        while (false !== ($constraint = $stmt->fetch(PDO::FETCH_ASSOC))) {
-            if (!$this->loader->shouldBeIgnored($constraint['constr'])) {
-                $this->dropConstraint($constraint['tbl'], $constraint['constr'], $constraint['ctype']);
-            }
-        }
         foreach ($this->extractOperations(static::REGEX, $sql) as $index) {
             $name = strlen($index[2])
                 ? $index[2]
@@ -108,9 +97,6 @@ abstract class IndexesAndConstraints extends Plugin
         }
         foreach ($this->requestedIndexes as $index) {
             $this->defer($index[0]);
-        }
-        foreach ($this->extractOperations("@^ALTER TABLE \S+ ADD FOREIGN KEY.*?;@ms", $sql) as $constraint) {
-            $this->defer($constraint[0]);
         }
         return $sql;
     }

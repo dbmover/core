@@ -51,6 +51,15 @@ foreach ($config as $dsn => $settings) {
     putenv("DBMOVER_VENDOR=$vendor");
     $settings[PDO::ATTR_ERRMODE] = PDO::ERRMODE_EXCEPTION;
     $mover = new Loader($dsn, $settings, false, isset($argv[1]) && $argv[1] == '-v' ? true : false);
-    unset($mover);
+    $dry = isset($argv[1]) && $argv[1] === '--dry-run';
+    $mover->setDryMode($dry);
+    $sql = $mover->applyPlugins();
+    $mover->applyDeferred();
+    $stmts = $mover->cleanup($sql);
+    if ($dry) {
+        foreach ($stmts as $stmt) {
+            fwrite(STDOUT, "$stmt\n");
+        }
+    }
 }
 

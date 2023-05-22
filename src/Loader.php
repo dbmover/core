@@ -37,6 +37,9 @@ class Loader
 
     protected bool $silent = false;
 
+    /** @var bool */
+    protected $dry = false;
+
     /**
      * Constructor.
      *
@@ -90,23 +93,52 @@ class Loader
         foreach ($settings['schema'] as $schema) {
             $this->addSchema($schema);
         }
+    }
+
+    /**
+     * Apply plugin operations to SQL.
+     *
+     * @return string Update SQL.
+     */
+    public function applyPlugins() : string
+    {
         $this->info("Applying plugins to schemas...");
         $sql = implode("\n", $this->schemas);
+        // Strip comments
+        $sql = preg_replace("@--.*?$@m", '', $sql);
         $this->errors = [];
         foreach ($this->plugins as $plugin) {
             $sql = $plugin($sql);
             $plugin->persist();
         }
+        return $sql;
+    }
+
+    /**
+     * Apply deferred plugin operations.
+     *
+     * @return void
+     */
+    public function applyDeferred() : void
+    {
         while ($plugin = array_shift($this->plugins)) {
             unset($plugin);
         }
+    }
+
+    /**
+     * Cleanup existing statements.
+     *
+     * @param string $sql
+     * @return array An array of any non-executed SQL statement.
+     */
+    public function cleanup(string $sql) : array
+    {
         $stmts = [];
         foreach ($this->operations as $operation) {
             $stmts = array_merge($stmts, $this->sql(...$operation));
         }
-        // Strip remaining comments
-        $sql = preg_replace("@^--.*?$@m", '', $sql);
-        // and superfluous whitespace
+        // Strip superfluous whitespace
         $sql = preg_replace("@^\n{2,}@m", "\n", $sql);
 
         $left = trim($sql);
@@ -130,11 +162,19 @@ class Loader
         if (!$this->silent) {
             fwrite(STDOUT, "\n");
         }
-        if (isset($argv[1]) && $argv[1] == '--dry-run') {
-            foreach ($stmts as $stmt) {
-                fwrite(STDOUT, trim($stmt)."\n");
-            }
-        }
+        return $stmts;
+    }
+
+    /**
+     * Set the dry mode or not. Dry mode means we only gather the requested
+     * operations, we don't actually perform them.
+     *
+     * @param bool $dry Defaults to false.
+     * @return void
+     */
+    public function setDryMode(bool $dry = false) : void
+    {
+        $this->dry = $dry;
     }
 
     /**
@@ -320,7 +360,7 @@ class Loader
         $stmts = [];
         while ($sql = array_shift($sqls)) {
             $stmts[] = trim($sql);
-            if (!(isset($argv[1]) && $argv[1] == '--dry-run')) {
+            if (!$this->dry) {
                 try {
                     $this->pdo->exec(trim($sql));
                 } catch (PDOException $e) {
