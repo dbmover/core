@@ -14,8 +14,8 @@
         "monomelodies/kingconf": "^1.1"
     },
     "require-dev": {
-        "gentry/gentry": "^0.13.0",
-        "toast/unit": "^2.0",
+        "gentry/gentry": "^0.16.11",
+        "toast/unit": "^2.2.1",
         "gentry/toast": "^0.1.0"
     },
     "bin": [
