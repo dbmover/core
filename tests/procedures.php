@@ -7,7 +7,7 @@ use Dbmover\Core\Procedures;
 /** Testsuite for Dbmover\Core\Procedures */
 return function () : Generator {
     $loader = new Loader('mysql:dbname=dbmover_test', ['user' => 'dbmover_test', 'pass' => 'moveit'], true);
-    $object = Wrapper::createObject(Procedures::class, $loader);
+    $object = new Wrapper(new Procedures($loader));
     /** Functions get stripped */
     yield function () use ($object) {
         $result = $object->__invoke(<<<EOT
