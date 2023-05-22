@@ -7,7 +7,7 @@ use Dbmover\Core\Loader;
 /** Testsuite for Dbmover\Core\Conditionals */
 return function () : Generator {
     $loader = new Loader('mysql:dbname=dbmover_test', ['user' => 'dbmover_test', 'pass' => 'moveit'], true);
-    $object = Wrapper::createObject(Dbmover\Core\Conditionals::class, $loader);
+    $object = new Wrapper(new Dbmover\Core\Conditionals($loader));
     /** Conditionals get extracted */
     yield function () use ($object) {
         $result = $object->__invoke(<<<EOT
