@@ -49,6 +49,12 @@ Whenever you run DbMover, it will loop through all entries and apply whatever
 you asked for. Many projects will use a single database, but as you can see
 DbMover fully supports multiple databases in one configuration file.
 
+Of course, you don't want to have your actual username/password in a version
+controlled configuration file (and you do want this version controlled). Best
+practice (unless you're working on the project alone) is to version control a
+`dbmover.json.sample` file which has blanks for user/pass, but does contain the
+other important information (schemas and plugins).
+
 ### DSN
 This is the "DSN" connection string for a database. The exact format will vary
 per vendor, but is usually of the type "vendor:dname=NAME;host=HOST;port=PORT",
