@@ -1,10 +1,12 @@
 <?php
 
 use Gentry\Gentry\Wrapper;
+use Dbmover\Core\Loader;
 
 /** Testsuite for Dbmover\Core\ForceNamedIndexes */
 return function () : Generator {
-    $object = Wrapper::createObject(Dbmover\Core\ForceNamedIndexes::class);
+    $loader = new Loader('mysql:dbname=dbmover_test', ['user' => 'dbmover_test', 'pass' => 'moveit'], true);
+    $object = new Wrapper(new Dbmover\Core\ForceNamedIndexes($loader));
     /** An unnamed index gets named correctly */
     yield function () use ($object) {
         $result = $object->__invoke('CREATE INDEX ON foo(bar);');
