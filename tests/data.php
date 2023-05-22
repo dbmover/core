@@ -7,7 +7,7 @@ use Dbmover\Core\Data;
 /** Testsuite for Dbmover\Core\Data */
 return function () : Generator {
     $loader = new Loader('mysql:dbname=dbmover_test', ['user' => 'dbmover_test', 'pass' => 'moveit'], true);
-    $data = Wrapper::createObject(Data::class, $loader);
+    $data = new Wrapper(new Data($loader));
     /** Insert statements get stripped */
     yield function () use ($data) {
         $result = $data->__invoke("INSERT INTO foo VALUES ('bar');");
