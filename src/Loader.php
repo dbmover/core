@@ -13,18 +13,29 @@ use Dbmover\Dbmover\Objects\Sql;
  */
 class Loader
 {
-    protected $schemas = [];
-    protected $ignores = [];
-    protected $errors = [];
-    protected $dsn;
-    protected $pdo;
-    protected $operations = [];
-    protected $vendor;
-    protected $database;
-    protected $plugins = [];
-    protected $user;
-    protected $settings;
-    protected $silent = false;
+    protected array $schemas = [];
+
+    protected array $ignores = [];
+
+    protected array $errors = [];
+
+    protected string $dsn;
+
+    protected PDO $pdo;
+
+    protected array $operations = [];
+
+    protected string $vendor;
+
+    protected string $database;
+
+    protected array $plugins = [];
+
+    protected string $user;
+
+    protected array $settings;
+
+    protected bool $silent = false;
 
     /**
      * Constructor.
@@ -264,7 +275,7 @@ class Loader
     public function addSchema(string $schema) : void
     {
         $work = $schema;
-        if ($work{0} != '/') {
+        if ($work[0] != '/') {
             $work = getcwd()."/$work";
         }
         if (!file_exists($work)) {
