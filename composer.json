@@ -15,7 +15,7 @@
     },
     "require-dev": {
         "gentry/gentry": "^0.16.11",
-        "toast/unit": "^2.2.1",
+        "toast/unit": "^2.2.2",
         "gentry/toast": "^0.1.0"
     },
     "bin": [
