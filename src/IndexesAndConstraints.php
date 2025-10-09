@@ -16,7 +16,7 @@ use PDO;
 abstract class IndexesAndConstraints extends Plugin
 {
     /** @var string */
-    const REGEX = "@^CREATE\s+(UNIQUE\s+)?INDEX\s+([^\s]+?)?\s*ON\s+([^\s\(]+)(\s+USING \w+)?\s*\((.*)\).*?;$@m";
+    const REGEX = "@^CREATE\s+(UNIQUE|FULLTEXT)?\s*INDEX\s+([^\s]+?)?\s*ON\s+([^\s\(]+)(\s+USING \w+)?\s*\((.*)\).*?;$@m";
 
     /** @var string */
     const DEFAULT_INDEX_TYPE = '';
