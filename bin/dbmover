@@ -33,7 +33,7 @@ EOT
 }
 $autoloader = require getcwd().'/vendor/autoload.php';
 
-$config = json_decode(file_get_contents(getcwd().'/dbmover.json'));
+$config = json_decode(file_get_contents(getcwd().'/dbmover.json'), true);
 if (!$config) {
     fwrite(STDERR, <<<EOT
 \033[1;31mError: Config file `dbmover.json` not found or invalid.\033[0m
