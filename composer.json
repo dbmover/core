@@ -10,8 +10,8 @@
         }
     ],
     "require": {
-        "php": ">=7.3",
-        "monomelodies/kingconf": "^1.1"
+        "php": ">=8.4",
+        "m1/env": "^2.2"
     },
     "require-dev": {
         "gentry/gentry": "^0.16.11",
