@@ -3,7 +3,6 @@
 
 namespace Dbmover\Core;
 
-use Monomelodies\Kingconf\Config;
 use PDOException;
 use PDO;
 
@@ -16,7 +15,7 @@ if (!ini_get('date.timezone')) {
     ini_set('date.timezone', 'UTC');
 }
 
-fwrite(STDOUT, "DbMover 0.9.3 by Marijn Ophorst\n\n");
+fwrite(STDOUT, "DbMover 0.11.0 by Marijn Ophorst\n\n");
 
 if (!file_exists(getcwd().'/vendor/autoload.php')) {
     fwrite(STDERR, <<<EOT
@@ -34,9 +33,8 @@ EOT
 }
 $autoloader = require getcwd().'/vendor/autoload.php';
 
-try {
-    $config = (object)(array)(new Config(getcwd().'/dbmover.json'));
-} catch (Kingconf\Exception $e) {
+$config = json_decode(file_get_contents(getcwd().'/dbmover.json'));
+if (!$config) {
     fwrite(STDERR, <<<EOT
 \033[1;31mError: Config file `dbmover.json` not found or invalid.\033[0m
 

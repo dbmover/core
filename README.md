@@ -118,6 +118,29 @@ composer require dbmover/mysql
 }
 ```
 
+## Variable injection from `.env` files
+As of version 0.11, DbMover supports variable injection from a `.env` file. This
+can come in handy in more complex schemas where certain parameters (like a table
+prefix) depend on the environment (dev, staging, live).
+
+To inject a variable, simply write <% VARNAME %> any place you require it in
+your schema. (We apologise for the ASP-style syntax, but we needed something
+that most probably will not conflict with any actual schema logic...)
+
+So, for instance, if your `.env` contains the following:
+
+```
+TABLE_PREFIX=foo
+```
+
+...you would write:
+
+```sql
+CREATE <% TABLE_PREFIX %>_mytable ( ... );
+```
+
+...which then becomes `CREATE TABLE foo_mytable ( ... );`.
+
 ## Writing custom plugins
 Each plugin must implement `Dbmover\Core\PluginInterface`. Usually you'll want
 to extend the abstract `Dbmover\Core\Plugin`, but there are cases thinkable

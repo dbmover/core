@@ -6,6 +6,7 @@ use PDO;
 use PDOException;
 use Dariuszp\CliProgressBar;
 use Dbmover\Dbmover\Objects\Sql;
+use M1\Env\Parser;
 
 /**
  * The main Loader class. This represents a migration for a single unique DSN
@@ -322,7 +323,17 @@ class Loader
             $this->notice("`\"$schema\"` for `{$this->database}` not found, skipping.");
             return;
         }
-        $this->schemas[] = file_get_contents($work);
+        $sql = file_get_contents($work);
+        if (file_exists(getcwd()."/.env")) {
+            $env = new Parser(file_get_contents(getcwd()."/.env"));
+            $vars = $env->getContent();
+            $replacemens = [];
+            foreach ($vars as $name => $value) {
+                $replacements["<% $name %>"] = $value;
+            }
+            $sql = str_replace(array_keys($replacements), array_values($replacements), $sql);
+        }
+        $this->schemas[] = $sql;
         $this->success("Loaded $schema.");
     }
 
